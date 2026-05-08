@@ -9,6 +9,7 @@ class ShopSettingsModel {
   final int slotCapacity; // Max bookings per slot
   final bool isHolidayMode; // No slots available if true
   final List<String>? closedDates; // Dates when closed (YYYY-MM-DD format)
+  final String? upiId; // UPI ID for payments (e.g., "shop@okhdfcbank")
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -22,6 +23,7 @@ class ShopSettingsModel {
     this.slotCapacity = 5,
     this.isHolidayMode = false,
     this.closedDates,
+    this.upiId,
     this.createdAt,
     this.updatedAt,
   });
@@ -37,6 +39,7 @@ class ShopSettingsModel {
       'slotCapacity': slotCapacity,
       'isHolidayMode': isHolidayMode,
       'closedDates': closedDates ?? [],
+      'upiId': upiId,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
@@ -57,6 +60,7 @@ class ShopSettingsModel {
       slotCapacity: data['slotCapacity'] as int? ?? 5,
       isHolidayMode: data['isHolidayMode'] as bool? ?? false,
       closedDates: List<String>.from(data['closedDates'] ?? []),
+      upiId: data['upiId'] as String?,
       createdAt: data['createdAt'] != null
           ? DateTime.parse(data['createdAt'].toString())
           : null,
@@ -77,6 +81,7 @@ class ShopSettingsModel {
     int? slotCapacity,
     bool? isHolidayMode,
     List<String>? closedDates,
+    String? upiId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -90,6 +95,7 @@ class ShopSettingsModel {
       slotCapacity: slotCapacity ?? this.slotCapacity,
       isHolidayMode: isHolidayMode ?? this.isHolidayMode,
       closedDates: closedDates ?? this.closedDates,
+      upiId: upiId ?? this.upiId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
