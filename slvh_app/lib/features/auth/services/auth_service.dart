@@ -92,8 +92,65 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_isLoggedInKey);
       await prefs.remove(_phoneNumberKey);
+      await prefs.remove(_adminLoginKey);
+      await prefs.remove(_adminEmailKey);
     } catch (e) {
       // Handle error silently
+    }
+  }
+
+  // ============= ADMIN LOGIN (FAKE - FOR DEVELOPMENT) =============
+
+  static const String _adminLoginKey = 'admin_logged_in';
+  static const String _adminEmailKey = 'admin_email';
+  
+  // Fake admin credentials (for development only)
+  static const String FAKE_ADMIN_EMAIL = 'admin@smartshop.com';
+  static const String FAKE_ADMIN_PASSWORD = 'admin123';
+
+  /// Admin login with email and password (FAKE - for development)
+  /// In production, replace with Firebase Authentication
+  Future<bool> adminLogin({
+    required String email,
+    required String password,
+    required Function(String errorMessage) onError,
+  }) async {
+    try {
+      // Simulate network delay
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Fake admin verification
+      if (email == FAKE_ADMIN_EMAIL && password == FAKE_ADMIN_PASSWORD) {
+        // Save admin login state
+        await _saveAdminLoginState(email);
+        return true;
+      } else {
+        onError('Invalid email or password');
+        return false;
+      }
+    } catch (e) {
+      onError('Login failed: ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// Check if admin is logged in
+  Future<bool> isAdminLoggedIn() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_adminLoginKey) ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Get current admin email
+  Future<String?> getCurrentAdminEmail() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_adminEmailKey);
+    } catch (e) {
+      return null;
     }
   }
 
@@ -107,6 +164,17 @@ class AuthService {
       await prefs.setString(_phoneNumberKey, phoneNumber);
     } catch (e) {
       throw Exception('Failed to save login state: ${e.toString()}');
+    }
+  }
+
+  /// Save admin login state to SharedPreferences
+  Future<void> _saveAdminLoginState(String email) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_adminLoginKey, true);
+      await prefs.setString(_adminEmailKey, email);
+    } catch (e) {
+      throw Exception('Failed to save admin login state: ${e.toString()}');
     }
   }
 

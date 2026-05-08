@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../features/auth/screens/phone_input_screen.dart';
 import '../features/auth/screens/otp_screen.dart';
 import '../features/auth/screens/home_screen.dart';
-import '../features/admin/screens/admin_login_screen.dart';
-import '../features/admin/screens/admin_dashboard.dart';
+import '../features/auth/screens/admin_login_screen.dart';
+import '../features/auth/screens/admin_dashboard.dart';
 
 class AppRoutes {
   static const String phoneInput = '/';

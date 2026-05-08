@@ -4,6 +4,7 @@ import 'routes/app_router.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/auth/screens/phone_input_screen.dart';
 import 'features/auth/screens/home_screen.dart';
+import 'features/auth/screens/admin_dashboard.dart';
 
 class SLVHApp extends StatelessWidget {
   const SLVHApp({super.key});
@@ -28,18 +29,28 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  late Future<bool> _isLoggedInFuture;
+  late Future<Map<String, bool>> _loginStatusFuture;
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
     super.initState();
-    _isLoggedInFuture = AuthService().isUserLoggedIn();
+    _loginStatusFuture = _checkLoginStatus();
+  }
+
+  Future<Map<String, bool>> _checkLoginStatus() async {
+    final isCustomerLoggedIn = await _authService.isUserLoggedIn();
+    final isAdminLoggedIn = await _authService.isAdminLoggedIn();
+    return {
+      'customer': isCustomerLoggedIn,
+      'admin': isAdminLoggedIn,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _isLoggedInFuture,
+    return FutureBuilder<Map<String, bool>>(
+      future: _loginStatusFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -53,8 +64,18 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return const PhoneInputScreen();
         }
 
-        final isLoggedIn = snapshot.data ?? false;
-        return isLoggedIn ? const HomeScreen() : const PhoneInputScreen();
+        final loginStatus = snapshot.data ?? {'customer': false, 'admin': false};
+        final isCustomerLoggedIn = loginStatus['customer'] ?? false;
+        final isAdminLoggedIn = loginStatus['admin'] ?? false;
+
+        // Priority: Check admin first, then customer
+        if (isAdminLoggedIn) {
+          return const AdminDashboard();
+        } else if (isCustomerLoggedIn) {
+          return const HomeScreen();
+        } else {
+          return const PhoneInputScreen();
+        }
       },
     );
   }
