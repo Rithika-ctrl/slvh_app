@@ -3,24 +3,23 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/gradient_background.dart';
-import '../services/auth_service.dart';
+import '../services/admin_auth_service.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class AdminDashboard extends StatefulWidget {
+  const AdminDashboard({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final AuthService _authService = AuthService();
-  String? _userPhone;
+class _AdminDashboardState extends State<AdminDashboard> {
+  final AdminAuthService _authService = AdminAuthService();
+  String? _adminEmail;
 
   @override
   void initState() {
     super.initState();
-    final user = _authService.getCurrentUser();
-    _userPhone = user?.phoneNumber ?? 'User';
+    _adminEmail = _authService.getCurrentUser()?.email ?? 'Admin';
   }
 
   void _logout() async {
@@ -46,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'SLVH',
+                      'ADMIN',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -81,13 +80,13 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   const Icon(
-                    Icons.check_circle,
-                    color: AppColors.success,
+                    Icons.admin_panel_settings,
+                    color: AppColors.cyan,
                     size: 48,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   const Text(
-                    'Welcome to SLVH!',
+                    'Welcome, Admin!',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -96,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    _userPhone ?? 'User',
+                    _adminEmail ?? 'Admin',
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -104,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   const Text(
-                    'Fresh. Fast. Local.',
+                    'SLVH Smart Shop',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textHint,
@@ -115,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Quick Actions
+            // Admin Actions
             GlassCard(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -123,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Quick Actions',
+                    'Management',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -131,49 +130,74 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  
+                  // Manage Products
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.shopping_cart),
-                      label: const Text('Browse Products'),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Products management coming soon...'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.inventory),
+                      label: const Text('Manage Products'),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
+
+                  // View Orders
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.location_on),
-                      label: const Text('Find Nearby Stores'),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Orders dashboard coming soon...'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.receipt),
+                      label: const Text('View Orders'),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+
+                  // Manage Users
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Users management coming soon...'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.people),
+                      label: const Text('Manage Users'),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+
+                  // Analytics
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Analytics coming soon...'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.bar_chart),
+                      label: const Text('View Analytics'),
                     ),
                   ),
                 ],
-              ),
-            ),
-
-            // Admin Access
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).pushNamed('/admin-login');
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-                ),
-                child: const Text(
-                  'Admin Access',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textHint,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
               ),
             ),
 

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import '../features/auth/screens/phone_input_screen.dart';
 import '../features/auth/screens/otp_screen.dart';
 import '../features/auth/screens/home_screen.dart';
+import '../features/admin/screens/admin_login_screen.dart';
+import '../features/admin/screens/admin_dashboard.dart';
 
 class AppRoutes {
   static const String phoneInput = '/';
   static const String otp        = '/otp';
   static const String home       = '/home';
+  static const String adminLogin = '/admin-login';
   static const String adminHome  = '/admin';
 }
 
@@ -31,6 +34,16 @@ class AppRouter {
       case AppRoutes.home:
         return MaterialPageRoute(
           builder: (_) => const HomeScreen(),
+        );
+
+      case AppRoutes.adminLogin:
+        return MaterialPageRoute(
+          builder: (_) => const AdminLoginScreen(),
+        );
+
+      case AppRoutes.adminHome:
+        return MaterialPageRoute(
+          builder: (_) => const AdminDashboard(),
         );
 
       default:
