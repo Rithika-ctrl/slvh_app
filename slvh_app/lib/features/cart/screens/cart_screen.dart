@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:slvh_app/features/cart/providers/cart_provider.dart';
 import 'package:slvh_app/features/cart/widgets/cart_item_tile.dart';
@@ -181,13 +182,9 @@ class CartScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('🔜 Checkout feature coming soon!'),
-                ),
-              );
-              // TODO: Implement checkout screen
-              // context.push('/checkout', extra: cartSummary);
+              // Navigate to checkout with cart summary
+              final cartSummary = cartProvider.getCartSummary();
+              context.push('/checkout', extra: cartSummary);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange[700],

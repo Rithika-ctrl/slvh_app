@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../features/auth/services/auth_service.dart';
 import '../features/auth/screens/phone_input_screen.dart';
 import '../features/auth/screens/otp_screen.dart';
 import '../features/auth/screens/home_screen.dart';
 import '../features/auth/screens/admin_login_screen.dart';
 import '../features/auth/screens/admin_dashboard.dart';
+import '../features/orders/models/order_model.dart';
+import '../features/orders/screens/order_summary_screen.dart';
+import '../features/orders/screens/order_history_screen.dart';
+import '../features/orders/screens/order_detail_screen.dart';
+import '../features/checkout/screens/checkout_screen.dart';
 
 class AppRoutes {
   static const String phoneInput = '/';
@@ -13,6 +19,10 @@ class AppRoutes {
   static const String home       = '/home';
   static const String adminLogin = '/admin-login';
   static const String adminHome  = '/admin';
+  static const String checkout   = '/checkout';
+  static const String orders     = '/orders';
+  static const String orderSummary = '/order-summary';
+  static const String orderDetail = '/order';
 }
 
 /// GoRouter configuration with route guards and role-based access control
@@ -57,13 +67,17 @@ class AppRouter {
           return AppRoutes.phoneInput;
         }
 
-        // Customer Routes Protection
-        if (state.matchedLocation == AppRoutes.home) {
-          // Only allow customers to access customer home
+        // Customer Routes Protection (home, checkout, orders, order details)
+        if (state.matchedLocation == AppRoutes.home ||
+            state.matchedLocation == AppRoutes.checkout ||
+            state.matchedLocation == AppRoutes.orders ||
+            state.matchedLocation == AppRoutes.orderSummary ||
+            state.matchedLocation.startsWith('${AppRoutes.orderDetail}/')) {
+          // Only allow customers to access customer routes
           if (isCustomerLoggedIn && role != 'admin') {
             return null; // Allow access
           }
-          // Admins trying to access customer home → redirect to admin dashboard
+          // Admins trying to access customer routes → redirect to admin dashboard
           if (isAdminLoggedIn) {
             return AppRoutes.adminHome;
           }
@@ -123,6 +137,61 @@ class AppRouter {
           path: AppRoutes.adminHome,
           name: 'adminHome',
           builder: (context, state) => const AdminDashboard(),
+        ),
+
+        // ========== CHECKOUT & ORDER ROUTES (Customer) ==========
+
+        GoRoute(
+          path: AppRoutes.checkout,
+          name: 'checkout',
+          builder: (context, state) {
+            final cartSummary = state.extra as Map<String, dynamic>?;
+            if (cartSummary == null) {
+              return const Scaffold(
+                body: Center(child: Text('Cart data not found')),
+              );
+            }
+            return CheckoutScreen(cartSummary: cartSummary);
+          },
+        ),
+
+        GoRoute(
+          path: AppRoutes.orders,
+          name: 'orders',
+          builder: (context, state) {
+            final phoneNumber = FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
+            return OrderHistoryScreen(
+              customerId: phoneNumber,
+              onOrderTap: (orderId) => context.push('${AppRoutes.orderDetail}/$orderId'),
+            );
+          },
+        ),
+
+        GoRoute(
+          path: '${AppRoutes.orderDetail}/:orderId',
+          name: 'orderDetail',
+          builder: (context, state) {
+            final orderId = state.pathParameters['orderId'] ?? '';
+            return OrderDetailScreen(orderId: orderId);
+          },
+        ),
+
+        GoRoute(
+          path: AppRoutes.orderSummary,
+          name: 'orderSummary',
+          builder: (context, state) {
+            final order = state.extra as OrderModel?;
+            if (order == null) {
+              return const Scaffold(
+                body: Center(child: Text('Order data not found')),
+              );
+            }
+            return OrderSummaryScreen(
+              order: order,
+              onContinueShopping: () => context.go(AppRoutes.home),
+              onViewOrders: () => context.push(AppRoutes.orders),
+            );
+          },
         ),
       ],
 
