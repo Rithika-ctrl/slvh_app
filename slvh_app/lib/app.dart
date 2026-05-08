@@ -13,23 +13,19 @@ class SLVHApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'SLVH Smart Shop',
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       home: const AuthWrapper(),
       onGenerateRoute: AppRouter.generateRoute,
     );
   }
 }
 
-// Wrapper to check auth state on startup
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
     final user = AuthService().getCurrentUser();
-    
-    // If user is logged in, show home. Otherwise, show phone input
     return user != null ? const HomeScreen() : const PhoneInputScreen();
   }
 }
-

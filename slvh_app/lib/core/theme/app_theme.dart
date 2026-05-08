@@ -1,84 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme {
     return ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.bgDark1,
-      fontFamily: 'Arial',
-
-      colorScheme: const ColorScheme.dark(
-        primary:   Color(0xFF00E5FF), // cyanAccent
-        secondary: Color(0xFF26A69A),
-        surface:   Color(0xFF1B3A5C),
-        error:     Color(0xFFEF5350),
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: AppColors.bgCream,
+      textTheme: GoogleFonts.nunitoTextTheme().apply(
+        bodyColor: AppColors.textDark,
+        displayColor: AppColors.textDark,
       ),
-
-      // ElevatedButton default style
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.cyanAccent.withOpacity(0.7),
-          foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-          ),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            letterSpacing: 1,
-          ),
-        ),
+      colorScheme: const ColorScheme.light(
+        primary:   AppColors.orange,
+        secondary: AppColors.orangeLight,
+        surface:   AppColors.bgCream,
+        error:     AppColors.error,
       ),
-
-      // InputDecoration default style
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.08),
-        hintStyle: const TextStyle(color: AppColors.textHint),
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide: const BorderSide(color: Colors.cyanAccent, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-      ),
-
-      // SnackBar style
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(0xFF1B3A5C),
-        contentTextStyle: const TextStyle(color: Colors.white),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
-
-      // AppBar style
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
-        titleTextStyle: TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.5,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        iconTheme: IconThemeData(color: AppColors.textDark),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.orange,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
+          ),
+          elevation: 0,
         ),
-        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.orangePale,
+        hintStyle: const TextStyle(color: AppColors.textHint, fontWeight: FontWeight.w700),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          borderSide: BorderSide(color: AppColors.orange.withOpacity(0.32), width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          borderSide: BorderSide(color: AppColors.orange.withOpacity(0.32), width: 2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          borderSide: const BorderSide(color: AppColors.orange, width: 2.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
+          borderSide: const BorderSide(color: AppColors.error, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.textDark,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
