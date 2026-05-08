@@ -1,0 +1,57 @@
+# Flutter
+build/
+ios/Flutter/Flutter.podspec
+ios/Flutter/Flutter-Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/pubspec.lock
+
+# Android
+android/.gradle
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/.idea/
+
+# iOS
+ios/.idea/
+ios/Pods/
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Windows
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+
+# Linux
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+
+# Web
+web/flutter_service_worker.js
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Generated
+*.g.dart
+*.config.dart
+
+# Misc
+*.log
