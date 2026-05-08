@@ -4,6 +4,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../services/auth_service.dart';
+import '../../categories/services/category_service.dart';
+import '../../categories/widgets/category_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
+  final CategoryService _categoryService = CategoryService();
   String? _userPhone;
 
   // Offer banner data
@@ -392,78 +395,80 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Categories ─────────────────────────────────────────────────────────────
+  // ── Categories (from Firestore) ───────────────────────────────────────────
   Widget _buildCategories() {
-    final cats = [
-      {'icon': '🧴', 'name': 'Personal\nCare', 'colors': [const Color(0xFF74B9FF), const Color(0xFF0984E3)], 'textColor': const Color(0xFF0984E3)},
-      {'icon': '🧼', 'name': 'Soaps &\nWash',  'colors': [const Color(0xFFFD79A8), const Color(0xFFE84393)], 'textColor': const Color(0xFFE84393)},
-      {'icon': '🧹', 'name': 'Cleaning',       'colors': [const Color(0xFF55EFC4), const Color(0xFF00B894)], 'textColor': const Color(0xFF00B894)},
-      {'icon': '🧻', 'name': 'Paper',           'colors': [const Color(0xFFFFEAA7), const Color(0xFFFDCB6E)], 'textColor': const Color(0xFFE17055)},
-      {'icon': '🫙', 'name': 'Kitchen',         'colors': [const Color(0xFFA29BFE), const Color(0xFF6C5CE7)], 'textColor': const Color(0xFF6C5CE7)},
-      {'icon': '🪥', 'name': 'Dental',          'colors': [const Color(0xFFFAB1A0), const Color(0xFFE17055)], 'textColor': const Color(0xFFE17055)},
-      {'icon': '🧃', 'name': 'Beverages',       'colors': [const Color(0xFF81ECEC), const Color(0xFF00CEC9)], 'textColor': const Color(0xFF00CEC9)},
-      {'icon': '📦', 'name': 'Packaged',        'colors': [const Color(0xFFFDCB6E), const Color(0xFFE17055)], 'textColor': const Color(0xFFE17055)},
-    ];
-
     return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 20, right: 8, bottom: 6),
-        itemCount: cats.length,
-        itemBuilder: (_, i) {
-          final cat = cats[i];
-          final colors = cat['colors'] as List<Color>;
-          return GestureDetector(
-            onTap: () {},
-            child: Container(
-              width: 74,
-              margin: const EdgeInsets.only(right: 12),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: colors,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.55),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.last.withOpacity(0.4),
-                          blurRadius: 18,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        cat['icon'] as String,
-                        style: const TextStyle(fontSize: 28),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    cat['name'] as String,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: cat['textColor'] as Color,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
+      height: 200,
+      child: FutureBuilder(
+        future: _categoryService.getAllCategories(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: SizedBox(
+                width: 50,
+                height: 50,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.orange),
+                  strokeWidth: 2,
+                ),
               ),
+            );
+          }
+
+          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      '📂 No categories yet',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Categories will appear here soon!',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final categories = snapshot.data!;
+
+          return GridView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(left: 20, right: 8),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 1,
+              childAspectRatio: 1.1,
+              mainAxisSpacing: 12,
             ),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              return CategoryCard(
+                category: categories[index],
+                onTap: () {
+                  // Navigate to products by category
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Viewing ${categories[index].name}'),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+              );
+            },
           );
         },
       ),
