@@ -105,8 +105,9 @@ class _OTPScreenState extends State<OTPScreen>
       _errorMessage = null;
     });
 
-    final user = await _authService.verifyOTP(
+    final isValid = await _authService.verifyOTP(
       otp: _fullOTP,
+      phoneNumber: widget.phoneNumber,
       onError: (msg) {
         setState(() {
           _isLoading = false;
@@ -119,12 +120,14 @@ class _OTPScreenState extends State<OTPScreen>
       },
     );
 
-    if (user != null) {
+    if (isValid) {
       setState(() => _isLoading = false);
       if (mounted) {
         Navigator.of(context)
             .pushNamedAndRemoveUntil('/home', (route) => false);
       }
+    } else {
+      setState(() => _isLoading = false);
     }
   }
 

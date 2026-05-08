@@ -46,9 +46,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    final user = _authService.getCurrentUser();
-    _userPhone = user?.phoneNumber ?? 'Shopper';
+    _loadUserPhone();
     _startOfferCycle();
+  }
+
+  Future<void> _loadUserPhone() async {
+    final phone = await _authService.getCurrentUserPhone();
+    setState(() {
+      _userPhone = phone ?? 'Shopper';
+    });
   }
 
   void _startOfferCycle() {

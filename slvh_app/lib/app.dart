@@ -20,12 +20,42 @@ class SLVHApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  late Future<bool> _isLoggedInFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLoggedInFuture = AuthService().isUserLoggedIn();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final user = AuthService().getCurrentUser();
-    return user != null ? const HomeScreen() : const PhoneInputScreen();
+    return FutureBuilder<bool>(
+      future: _isLoggedInFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return const PhoneInputScreen();
+        }
+
+        final isLoggedIn = snapshot.data ?? false;
+        return isLoggedIn ? const HomeScreen() : const PhoneInputScreen();
+      },
+    );
   }
 }

@@ -64,7 +64,8 @@ class _PhoneInputScreenState extends State<PhoneInputScreen>
 
     setState(() => _isLoading = true);
 
-    final phoneNumber = '+91${_phoneController.text.replaceAll(RegExp(r'\D'), '')}';
+    // Extract just the phone number (without country code for fake OTP)
+    final phoneNumber = _phoneController.text.replaceAll(RegExp(r'\D'), '');
 
     await _authService.sendOTP(
       phoneNumber: phoneNumber,
@@ -73,7 +74,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen>
         Navigator.of(context).pushNamed(
           '/otp',
           arguments: {
-            'phoneNumber': _phoneController.text,
+            'phoneNumber': phoneNumber,
             'verificationId': verificationId,
           },
         );
