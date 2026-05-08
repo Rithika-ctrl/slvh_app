@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// FAKE OTP Authentication Service
 /// 
@@ -150,6 +151,60 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_adminEmailKey);
     } catch (e) {
+      return null;
+    }
+  }
+
+  // ============= ROLE-BASED ACCESS =============
+
+  /// Get user role from Firestore
+  /// Returns: 'customer', 'admin', or null if not found
+  Future<String?> getUserRole(String phoneNumber) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(phoneNumber)
+          .get();
+      
+      if (doc.exists) {
+        return doc.data()?['role'] as String?;
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching user role: $e');
+      return null;
+    }
+  }
+
+  /// Get admin role from SharedPreferences
+  /// Returns: 'admin' if logged in, null otherwise
+  Future<String?> getAdminRole() async {
+    try {
+      final isAdmin = await isAdminLoggedIn();
+      return isAdmin ? 'admin' : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get current user role (customer or admin)
+  Future<String?> getCurrentUserRole() async {
+    try {
+      // Check if admin is logged in first
+      final adminRole = await getAdminRole();
+      if (adminRole != null) {
+        return adminRole;
+      }
+
+      // Otherwise check customer role
+      final phoneNumber = await getCurrentUserPhone();
+      if (phoneNumber != null) {
+        return await getUserRole(phoneNumber);
+      }
+
+      return null;
+    } catch (e) {
+      print('Error getting current user role: $e');
       return null;
     }
   }

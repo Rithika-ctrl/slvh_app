@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -71,9 +72,9 @@ class _PhoneInputScreenState extends State<PhoneInputScreen>
       phoneNumber: phoneNumber,
       onCodeSent: (verificationId, resendToken) {
         setState(() => _isLoading = false);
-        Navigator.of(context).pushNamed(
+        context.go(
           '/otp',
-          arguments: {
+          extra: {
             'phoneNumber': phoneNumber,
             'verificationId': verificationId,
           },
@@ -322,7 +323,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen>
 
             // Admin access
             GestureDetector(
-              onTap: () => Navigator.of(context).pushNamed('/admin-login'),
+              onTap: () => context.go('/admin-login'),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20, vertical: 7),

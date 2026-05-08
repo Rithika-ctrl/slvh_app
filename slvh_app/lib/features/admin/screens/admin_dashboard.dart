@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -25,7 +26,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void _logout() async {
     await _authService.signOut();
     if (mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      context.go('/');
     }
   }
 

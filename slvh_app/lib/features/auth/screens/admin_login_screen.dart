@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -93,7 +94,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
 
     if (success && mounted) {
       setState(() => _isLoading = false);
-      Navigator.of(context).pushNamedAndRemoveUntil('/admin', (route) => false);
+      context.go('/admin');
     } else {
       setState(() => _isLoading = false);
     }
@@ -380,10 +381,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/',
-                    (route) => false,
-                  ),
+                  onTap: () => context.go('/'),
                   child: const Text(
                     'Login here',
                     style: TextStyle(

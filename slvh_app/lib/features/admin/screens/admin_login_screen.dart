@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -77,7 +78,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Admin login successful!')),
         );
-        Navigator.of(context).pushReplacementNamed('/admin');
+        context.go('/admin');
       }
     }
   }

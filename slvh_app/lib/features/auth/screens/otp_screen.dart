@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -123,8 +124,7 @@ class _OTPScreenState extends State<OTPScreen>
     if (isValid) {
       setState(() => _isLoading = false);
       if (mounted) {
-        Navigator.of(context)
-            .pushNamedAndRemoveUntil('/home', (route) => false);
+        context.go('/home');
       }
     } else {
       setState(() => _isLoading = false);
