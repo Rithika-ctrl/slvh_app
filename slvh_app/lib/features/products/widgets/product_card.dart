@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/product_model.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../inventory/services/inventory_service.dart';
 
 /// Product Card Widget
 /// 
@@ -156,23 +157,43 @@ class _ProductCardState extends State<ProductCard>
                   Positioned(
                     top: 8,
                     left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: widget.product.isInStock ? Colors.green : Colors.grey,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        widget.product.isInStock ? 'In Stock' : 'Out',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
+                    child: FutureBuilder<int>(
+                      future: InventoryService().getLowStockThreshold(),
+                      builder: (context, thresholdSnapshot) {
+                        final threshold = thresholdSnapshot.data ?? 10;
+                        late Color badgeColor;
+                        late String badgeText;
+                        
+                        if (widget.product.stock == 0) {
+                          badgeColor = Colors.red;
+                          badgeText = 'Out of Stock';
+                        } else if (widget.product.stock <= threshold) {
+                          badgeColor = Colors.amber;
+                          badgeText = 'Low Stock';
+                        } else {
+                          badgeColor = Colors.green;
+                          badgeText = 'In Stock';
+                        }
+                        
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeColor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
 

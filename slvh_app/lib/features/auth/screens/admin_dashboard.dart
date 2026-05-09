@@ -204,7 +204,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                   const SizedBox(height: 12),
                   _MenuCard(
-                    icon: '👥',
+                    icon: '�',
+                    title: 'Manage Inventory',
+                    subtitle: 'Track stock levels and adjust inventory',
+                    color: const Color(0xFF1DD1A1),
+                    onTap: () {
+                      context.push('/inventory');
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _MenuCard(
+                    icon: '�👥',
                     title: 'Manage Customers',
                     subtitle: 'View customer list and details',
                     color: const Color(0xFFE84393),

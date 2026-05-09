@@ -66,6 +66,74 @@ export const onOrderStatusChanged = functions.firestore
   });
 
 /**
+ * Cloud Function: Trigger on product stock change
+ * Sends alert notification when product stock falls below threshold
+ */
+export const onProductStockLow = functions.firestore
+  .document('products/{productId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const before = change.before.data();
+      const after = change.after.data();
+      const productId = context.params.productId;
+
+      // Only proceed if stock changed
+      if (before.stock === after.stock) {
+        return { success: false, message: 'Stock did not change' };
+      }
+
+      console.log(
+        `Product ${productId} stock changed from ${before.stock} to ${after.stock}`
+      );
+
+      // Get low stock threshold from app_settings
+      const settingsDoc = await admin
+        .firestore()
+        .collection('app_settings')
+        .doc('inventory')
+        .get();
+
+      const lowStockThreshold = settingsDoc.data()?.lowStockThreshold || 10;
+
+      // Check if stock crossed threshold (either falling below or rising above)
+      const wasBelowThreshold = before.stock <= lowStockThreshold;
+      const isNowBelowThreshold = after.stock <= lowStockThreshold;
+      const isOutOfStock = after.stock === 0;
+
+      // Only alert if stock is now low or out of stock
+      if (isNowBelowThreshold && after.stock !== before.stock) {
+        // Log low stock event
+        await admin.firestore().collection('low_stock_alerts').add({
+          productId,
+          productName: after.name,
+          currentStock: after.stock,
+          threshold: lowStockThreshold,
+          isOutOfStock,
+          previousStock: before.stock,
+          alertSentAt: admin.firestore.FieldValue.serverTimestamp(),
+          alertLevel: isOutOfStock ? 'out_of_stock' : 'low_stock',
+        });
+
+        console.log(
+          `Low stock alert created for product ${productId}: ${after.stock} units remaining`
+        );
+
+        // TODO: Send notification to admin via push notification or WhatsApp
+        // This can be extended to send admin alerts via FCM or WhatsApp
+      }
+
+      return { success: true, message: 'Stock update processed' };
+    } catch (error) {
+      console.error('Error in onProductStockLow:', error);
+      return {
+        success: false,
+        message: 'Error processing stock change',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  });
+
+/**
  * Cloud Function: Manual trigger for testing
  * POST /sendTestWhatsApp?phoneNumber=+91XXXXXXXXXX&status=confirmed
  */
@@ -113,6 +181,6 @@ export const healthCheck = functions.https.onRequest(async (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    functions: ['onOrderStatusChanged', 'sendTestWhatsApp', 'healthCheck'],
+    functions: ['onOrderStatusChanged', 'onProductStockLow', 'sendTestWhatsApp', 'healthCheck'],
   });
 });
