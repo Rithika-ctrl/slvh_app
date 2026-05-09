@@ -10,6 +10,7 @@ import '../features/admin/screens/admin_dashboard_screen.dart';
 import '../features/admin/screens/add_product_screen.dart';
 import '../features/admin/screens/edit_product_screen.dart';
 import '../features/admin/screens/manage_pricing_screen.dart';
+import '../features/admin/screens/payment_verification_screen.dart';
 import '../features/admin/screens/product_list_admin.dart';
 import '../features/orders/models/order_model.dart';
 import '../features/orders/screens/order_summary_screen.dart';
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String adminHome = '/admin';
   static const String inventory = '/inventory';
   static const String adminProducts = '/admin/products';
+  static const String adminPayments = '/admin/payments';
   static const String checkout = '/checkout';
   static const String orders = '/orders';
   static const String notifications = '/notifications';
@@ -67,7 +69,8 @@ class AppRouter {
         // Admin Routes Protection
         if (state.matchedLocation == AppRoutes.adminHome ||
             state.matchedLocation == AppRoutes.inventory ||
-            state.matchedLocation.startsWith(AppRoutes.adminProducts)) {
+            state.matchedLocation.startsWith(AppRoutes.adminProducts) ||
+            state.matchedLocation.startsWith(AppRoutes.adminPayments)) {
           // Only allow admins to access admin dashboard and inventory
           if (isAdminLoggedIn && role == 'admin') {
             return null; // Allow access
@@ -156,6 +159,12 @@ class AppRouter {
           path: AppRoutes.inventory,
           name: 'inventory',
           builder: (context, state) => const InventoryScreen(),
+        ),
+
+        GoRoute(
+          path: AppRoutes.adminPayments,
+          name: 'adminPayments',
+          builder: (context, state) => const PaymentVerificationScreen(),
         ),
 
         GoRoute(
