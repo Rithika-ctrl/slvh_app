@@ -378,7 +378,7 @@ class OrderService {
             .count()
             .get();
 
-        result[status.name] = querySnapshot.count;
+        result[status.name] = querySnapshot.count ?? 0;
       }
 
       return result;

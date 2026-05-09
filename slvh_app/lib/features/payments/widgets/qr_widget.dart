@@ -68,26 +68,22 @@ class PaymentQRWidget extends StatelessWidget {
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(8),
             ),
-            child: QrImage(
-              data: _upiString,
-              version: QrVersions.auto,
-              size: 250,
-              backgroundColor: Colors.white,
-              errorCorrectLevel: QrErrorCorrectLevel.H,
-              errorStateBuilder: (context, error) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(_upiString)}',
+              width: 250,
+              height: 250,
+              errorBuilder: (context, error, stack) => Container(
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    'Failed to generate QR code',
+                    style: TextStyle(color: Colors.red[700]),
                   ),
-                  child: Center(
-                    child: Text(
-                      'Failed to generate QR code',
-                      style: TextStyle(color: Colors.red[700]),
-                    ),
-                  ),
-                );
-              },
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),

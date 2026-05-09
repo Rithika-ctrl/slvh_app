@@ -43,11 +43,11 @@ class OrderSummaryScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Pickup details
-            _buildPickupDetailsCard(),
+            _buildPickupDetailsCard(context),
             const SizedBox(height: 20),
 
             // Items summary
-            _buildItemsSummaryCard(),
+            _buildItemsSummaryCard(context),
             const SizedBox(height: 20),
 
             // Price breakdown
@@ -160,7 +160,7 @@ class OrderSummaryScreen extends StatelessWidget {
   }
 
   /// Build pickup details card
-  Widget _buildPickupDetailsCard() {
+  Widget _buildPickupDetailsCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -208,7 +208,7 @@ class OrderSummaryScreen extends StatelessWidget {
   }
 
   /// Build items summary card
-  Widget _buildItemsSummaryCard() {
+  Widget _buildItemsSummaryCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -375,10 +375,7 @@ class OrderSummaryScreen extends StatelessWidget {
     );
   }
 
-  BuildContext get context => const _ContextPlaceholder() as BuildContext;
 }
-
-class _ContextPlaceholder {}
 
 /// Pickup detail row
 class _PickupDetailRow extends StatelessWidget {

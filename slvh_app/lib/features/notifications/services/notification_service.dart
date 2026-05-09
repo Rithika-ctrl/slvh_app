@@ -2,7 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'notification_model.dart';
+import 'package:slvh_app/features/notifications/models/notification_model.dart';
 
 /// Top-level background message handler
 @pragma('vm:entry-point')
@@ -39,7 +39,6 @@ class NotificationService {
         alert: true,
         announcement: true,
         badge: true,
-        carplay: true,
         criticalAlert: true,
         provisional: false,
         sound: true,
