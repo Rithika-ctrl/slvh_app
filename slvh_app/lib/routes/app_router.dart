@@ -12,6 +12,7 @@ import '../features/admin/screens/edit_product_screen.dart';
 import '../features/admin/screens/manage_pricing_screen.dart';
 import '../features/admin/screens/payment_verification_screen.dart';
 import '../features/admin/screens/product_list_admin.dart';
+import '../features/admin/screens/order_management_screen.dart';
 import '../features/orders/models/order_model.dart';
 import '../features/orders/screens/order_summary_screen.dart';
 import '../features/orders/screens/order_history_screen.dart';
@@ -31,6 +32,7 @@ class AppRoutes {
   static const String inventory = '/inventory';
   static const String adminProducts = '/admin/products';
   static const String adminPayments = '/admin/payments';
+  static const String adminOrders = '/admin/orders';
   static const String checkout = '/checkout';
   static const String orders = '/orders';
   static const String notifications = '/notifications';
@@ -70,7 +72,8 @@ class AppRouter {
         if (state.matchedLocation == AppRoutes.adminHome ||
             state.matchedLocation == AppRoutes.inventory ||
             state.matchedLocation.startsWith(AppRoutes.adminProducts) ||
-            state.matchedLocation.startsWith(AppRoutes.adminPayments)) {
+            state.matchedLocation.startsWith(AppRoutes.adminPayments) ||
+            state.matchedLocation.startsWith(AppRoutes.adminOrders)) {
           // Only allow admins to access admin dashboard and inventory
           if (isAdminLoggedIn && role == 'admin') {
             return null; // Allow access
@@ -165,6 +168,21 @@ class AppRouter {
           path: AppRoutes.adminPayments,
           name: 'adminPayments',
           builder: (context, state) => const PaymentVerificationScreen(),
+        ),
+
+        GoRoute(
+          path: AppRoutes.adminOrders,
+          name: 'adminOrders',
+          builder: (context, state) => const OrderManagementScreen(),
+        ),
+
+        GoRoute(
+          path: '${AppRoutes.adminOrders}/:orderId',
+          name: 'adminOrderDetail',
+          builder: (context, state) {
+            final orderId = state.pathParameters['orderId'] ?? '';
+            return OrderDetailScreen(orderId: orderId);
+          },
         ),
 
         GoRoute(

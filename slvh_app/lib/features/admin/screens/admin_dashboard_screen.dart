@@ -129,6 +129,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 onPressed: () => context.push('/admin/products'),
               ),
               _QuickActionButton(
+                icon: Icons.receipt_long_outlined,
+                label: 'Orders',
+                onPressed: () => context.push('/admin/orders'),
+              ),
+              _QuickActionButton(
                 icon: Icons.verified_user_outlined,
                 label: 'Payments',
                 onPressed: () => context.push('/admin/payments'),
