@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth.token.email == 'admin@smartshop.com';
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function isPhoneOwner(phoneNumber) {
+      return request.auth.token.phone_number == phoneNumber;
+    }
+
+    function isCloudFunction() {
+      return request.auth.uid == null && request.auth.token.iss == 'https://securetoken.google.com/slvh-b707f';
+    }
+
+    // ========== USERS COLLECTION ==========
+    match /users/{phoneNumber} {
+      // User can read their own document
+      allow read: if isPhoneOwner(phoneNumber) || isAdmin() || isCloudFunction();
+      
+      // User can update their own document
+      allow update: if isPhoneOwner(phoneNumber) || isAdmin() || isCloudFunction();
+      
+      // Cloud Functions can write (for FCM token, notifications enabled, etc.)
+      allow write: if isCloudFunction();
+      
+      // Notifications subcollection
+      match /notifications/{notificationId} {
+        // User can read their own notifications
+        allow read: if isPhoneOwner(phoneNumber);
+        
+        // Cloud Functions can write notifications
+        allow write: if isCloudFunction();
+      }
+    }
+
+    // ========== ORDERS COLLECTION ==========
+    match /orders/{orderId} {
+      // Users can read their own orders
+      allow read: if resource.data.customerId == request.auth.token.phone_number;
+      
+      // Admin can read all orders
+      allow read: if isAdmin();
+      
+      // Cloud Functions can read orders
+      allow read: if isCloudFunction();
+      
+      // Users can create orders
+      allow create: if request.auth.token.phone_number != null;
+      
+      // Admin can update order status
+      allow update: if isAdmin() || isCloudFunction();
+    }
+
+    // ========== PRODUCTS COLLECTION ==========
+    match /products/{productId} {
+      // Anyone can read products
+      allow read: if true;
+      
+      // Only admin can write
+      allow write: if isAdmin();
+    }
+
+    // ========== PRICING_TIERS COLLECTION ==========
+    match /pricing_tiers/{tierId} {
+      // Anyone can read
+      allow read: if true;
+      
+      // Only admin can write
+      allow write: if isAdmin();
+    }
+
+    // ========== PICKUP_SLOTS COLLECTION ==========
+    match /pickup_slots/{slotId} {
+      // Anyone can read
+      allow read: if true;
+      
+      // Only admin can write
+      allow write: if isAdmin() || isCloudFunction();
+    }
+
+    // ========== PAYMENTS COLLECTION ==========
+    match /payments/{paymentId} {
+      // Users can read their own payments
+      allow read: if resource.data.customerId == request.auth.token.phone_number;
+      
+      // Admin can read all
+      allow read: if isAdmin();
+      
+      // Users can create payments
+      allow create: if request.auth.token.phone_number != null;
+      
+      // Admin can update payment status
+      allow update: if isAdmin() || isCloudFunction();
+    }
+
+    // ========== WHATSAPP_LOGS COLLECTION ==========
+    match /whatsapp_logs/{logId} {
+      // Cloud Functions can write logs
+      allow write: if isCloudFunction();
+      
+      // Admin can read logs
+      allow read: if isAdmin();
+    }
+
+    // ========== APP_SETTINGS COLLECTION ==========
+    match /app_settings/{document=**} {
+      // Only admin can write
+      allow write: if isAdmin() || isCloudFunction();
+      
+      // Anyone can read
+      allow read: if true;
+    }
+
+    // ========== DENY ALL OTHER ACCESS ==========
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
