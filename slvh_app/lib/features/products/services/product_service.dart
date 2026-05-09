@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/product_model.dart';
 
 /// Product Service
-/// 
+///
 /// Handles all Firestore operations for products:
 /// - Fetch all products
 /// - Fetch by category with real-time updates
@@ -23,7 +23,8 @@ class ProductService {
     bool onlyActive = true,
   }) async {
     try {
-      var query = _firestore.collection(_collectionPath);
+      Query<Map<String, dynamic>> query =
+          _firestore.collection(_collectionPath);
 
       if (onlyActive) {
         query = query.where('isActive', isEqualTo: true);
@@ -47,18 +48,17 @@ class ProductService {
         .doc(productId)
         .snapshots()
         .map((snapshot) {
-          if (snapshot.exists) {
-            return ProductModel.fromFirestore(
-              snapshot.id,
-              snapshot.data() as Map<String, dynamic>,
-            );
-          }
-          return null;
-        })
-        .handleError((error) {
-          print('Error watching product: $error');
-          return null;
-        });
+      if (snapshot.exists) {
+        return ProductModel.fromFirestore(
+          snapshot.id,
+          snapshot.data() as Map<String, dynamic>,
+        );
+      }
+      return null;
+    }).handleError((error) {
+      print('Error watching product: $error');
+      return null;
+    });
   }
 
   /// Fetch product by ID (one-time)
@@ -68,7 +68,8 @@ class ProductService {
           await _firestore.collection(_collectionPath).doc(productId).get();
 
       if (doc.exists) {
-        return ProductModel.fromFirestore(doc.id, doc.data() as Map<String, dynamic>);
+        return ProductModel.fromFirestore(
+            doc.id, doc.data() as Map<String, dynamic>);
       }
       return null;
     } catch (e) {
@@ -86,14 +87,13 @@ class ProductService {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
-              .toList();
-        })
-        .handleError((error) {
-          print('Error watching products by category: $error');
-          return <ProductModel>[];
-        });
+      return snapshot.docs
+          .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
+          .toList();
+    }).handleError((error) {
+      print('Error watching products by category: $error');
+      return <ProductModel>[];
+    });
   }
 
   /// Search products by name or description
@@ -107,8 +107,10 @@ class ProductService {
       final queryLower = query.toLowerCase();
 
       // Firestore doesn't support full text search, so we fetch all and filter
-      final snapshot =
-          await _firestore.collection(_collectionPath).where('isActive', isEqualTo: true).get();
+      final snapshot = await _firestore
+          .collection(_collectionPath)
+          .where('isActive', isEqualTo: true)
+          .get();
 
       final results = snapshot.docs
           .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
@@ -135,25 +137,24 @@ class ProductService {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-          final products = snapshot.docs
-              .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
-              .toList();
+      final products = snapshot.docs
+          .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
+          .toList();
 
-          if (searchQuery.isEmpty) {
-            return products;
-          }
+      if (searchQuery.isEmpty) {
+        return products;
+      }
 
-          final queryLower = searchQuery.toLowerCase();
-          return products
-              .where((product) =>
-                  product.name.toLowerCase().contains(queryLower) ||
-                  product.description.toLowerCase().contains(queryLower))
-              .toList();
-        })
-        .handleError((error) {
-          print('Error searching products by category: $error');
-          return <ProductModel>[];
-        });
+      final queryLower = searchQuery.toLowerCase();
+      return products
+          .where((product) =>
+              product.name.toLowerCase().contains(queryLower) ||
+              product.description.toLowerCase().contains(queryLower))
+          .toList();
+    }).handleError((error) {
+      print('Error searching products by category: $error');
+      return <ProductModel>[];
+    });
   }
 
   /// Get products with discount
@@ -194,23 +195,22 @@ class ProductService {
 
   /// Watch all products in real-time
   Stream<List<ProductModel>> watchAllProducts({bool onlyActive = true}) {
-    var query = _firestore.collection(_collectionPath).orderBy('createdAt', descending: true);
+    Query<Map<String, dynamic>> query = _firestore
+        .collection(_collectionPath)
+        .orderBy('createdAt', descending: true);
 
     if (onlyActive) {
       query = query.where('isActive', isEqualTo: true);
     }
 
-    return query
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
-              .toList();
-        })
-        .handleError((error) {
-          print('Error watching all products: $error');
-          return <ProductModel>[];
-        });
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
+          .toList();
+    }).handleError((error) {
+      print('Error watching all products: $error');
+      return <ProductModel>[];
+    });
   }
 
   // ============= ADMIN METHODS =============
@@ -279,7 +279,10 @@ class ProductService {
       if (unitType != null) updateData['unitType'] = unitType;
       if (isActive != null) updateData['isActive'] = isActive;
 
-      await _firestore.collection(_collectionPath).doc(productId).update(updateData);
+      await _firestore
+          .collection(_collectionPath)
+          .doc(productId)
+          .update(updateData);
 
       print('Product $productId updated');
       return true;
@@ -324,7 +327,8 @@ class ProductService {
   /// Get product count
   Future<int> getProductCount({bool onlyActive = true}) async {
     try {
-      var query = _firestore.collection(_collectionPath);
+      Query<Map<String, dynamic>> query =
+          _firestore.collection(_collectionPath);
 
       if (onlyActive) {
         query = query.where('isActive', isEqualTo: true);

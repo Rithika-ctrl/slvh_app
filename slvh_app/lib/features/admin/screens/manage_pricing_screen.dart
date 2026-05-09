@@ -81,13 +81,19 @@ class _ManagePricingScreenState extends State<ManagePricingScreen> {
                           children: [
                             Text(
                               'Base Price',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
                                     color: Colors.orange[700],
-                              ),
+                                  ),
                             ),
                             Text(
                               '₹${widget.basePrice.toStringAsFixed(2)}',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
                                     color: Colors.orange[700],
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -119,9 +125,10 @@ class _ManagePricingScreenState extends State<ManagePricingScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'No pricing tiers yet',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -157,7 +164,8 @@ class _ManagePricingScreenState extends State<ManagePricingScreen> {
                             width: tier.isDefault ? 2 : 1,
                           ),
                           borderRadius: BorderRadius.circular(8),
-                          color: tier.isDefault ? Colors.green[50] : Colors.white,
+                          color:
+                              tier.isDefault ? Colors.green[50] : Colors.white,
                         ),
                         child: ListTile(
                           contentPadding: const EdgeInsets.all(16),
@@ -166,13 +174,19 @@ class _ManagePricingScreenState extends State<ManagePricingScreen> {
                             children: [
                               Text(
                                 tier.quantity.toStringAsFixed(0),
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
                               Text(
                                 tier.unit,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: Colors.grey[600],
                                     ),
                               ),
@@ -183,14 +197,20 @@ class _ManagePricingScreenState extends State<ManagePricingScreen> {
                             children: [
                               Text(
                                 '₹${tier.price.toStringAsFixed(2)}',
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(
                                       color: Colors.orange[700],
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
                               Text(
                                 '₹${tier.getPricePerUnit().toStringAsFixed(2)}/unit',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: Colors.grey[600],
                                     ),
                               ),
@@ -202,7 +222,8 @@ class _ManagePricingScreenState extends State<ManagePricingScreen> {
                               children: [
                                 if (savings > 0)
                                   Chip(
-                                    label: Text('Save ${savings.toStringAsFixed(1)}%'),
+                                    label: Text(
+                                        'Save ${savings.toStringAsFixed(1)}%'),
                                     backgroundColor: Colors.red[100],
                                     labelStyle: TextStyle(
                                       color: Colors.red[700],
@@ -240,7 +261,8 @@ class _ManagePricingScreenState extends State<ManagePricingScreen> {
                                 PopupMenuItem(
                                   child: const Row(
                                     children: [
-                                      Icon(Icons.check_circle_outline, size: 18),
+                                      Icon(Icons.check_circle_outline,
+                                          size: 18),
                                       SizedBox(width: 8),
                                       Text('Set as Default'),
                                     ],
@@ -250,10 +272,11 @@ class _ManagePricingScreenState extends State<ManagePricingScreen> {
                               PopupMenuItem(
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.delete, size: 18,
-                                        color: Colors.red),
+                                    Icon(Icons.delete,
+                                        size: 18, color: Colors.red),
                                     SizedBox(width: 8),
-                                    Text('Delete', style: TextStyle(color: Colors.red)),
+                                    Text('Delete',
+                                        style: TextStyle(color: Colors.red)),
                                   ],
                                 ),
                                 onTap: () => _deleteTier(tier.id),
@@ -420,6 +443,7 @@ class __PricingTierDialogState extends State<_PricingTierDialog> {
             // Quantity input
             TextField(
               controller: _quantityController,
+              onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 labelText: 'Quantity',
                 hintText: 'e.g., 1, 5, 10',
@@ -427,7 +451,6 @@ class __PricingTierDialogState extends State<_PricingTierDialog> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                onChanged: (_) => setState(() {}),
               ),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -451,6 +474,7 @@ class __PricingTierDialogState extends State<_PricingTierDialog> {
             // Price input
             TextField(
               controller: _priceController,
+              onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 labelText: 'Price',
                 hintText: '₹0.00',
@@ -458,7 +482,6 @@ class __PricingTierDialogState extends State<_PricingTierDialog> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                onChanged: (_) => setState(() {}),
               ),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -503,7 +526,8 @@ class __PricingTierDialogState extends State<_PricingTierDialog> {
                         '${savings > 0 ? '+' : ''}${savings.toStringAsFixed(1)}%',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: savings > 0 ? Colors.green[700] : Colors.grey,
+                              color:
+                                  savings > 0 ? Colors.green[700] : Colors.grey,
                             ),
                       ),
                     ],

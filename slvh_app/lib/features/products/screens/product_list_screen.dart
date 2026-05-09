@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../categories/models/category_model.dart';
 import '../../categories/services/category_service.dart';
@@ -11,7 +10,7 @@ import '../widgets/product_card.dart';
 import '../widgets/search_bar.dart';
 
 /// Product List Screen
-/// 
+///
 /// Displays products with search and category filter capabilities.
 /// Features real-time stock updates via StreamBuilder.
 
@@ -30,7 +29,7 @@ class ProductListScreen extends StatefulWidget {
 class _ProductListScreenState extends State<ProductListScreen> {
   final ProductService _productService = ProductService();
   final CategoryService _categoryService = CategoryService();
-  
+
   String _searchQuery = '';
   String? _selectedCategoryId;
   late ScrollController _scrollController;
@@ -80,14 +79,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
         body: Column(
           children: [
             // ── Search Bar ─────────────────────────────────────────
-            SearchBar(
+            ProductSearchBar(
               placeholder: 'Search products…',
               onSearch: (query) {
                 setState(() => _searchQuery = query);
               },
-              onFilterTap: _selectedCategoryId == null ? null : () {
-                setState(() => _selectedCategoryId = null);
-              },
+              onFilterTap: _selectedCategoryId == null
+                  ? null
+                  : () {
+                      setState(() => _selectedCategoryId = null);
+                    },
             ),
 
             // ── Category Filter ────────────────────────────────────

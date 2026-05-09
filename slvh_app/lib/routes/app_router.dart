@@ -7,6 +7,10 @@ import '../features/auth/screens/otp_screen.dart';
 import '../features/auth/screens/home_screen.dart';
 import '../features/auth/screens/admin_login_screen.dart';
 import '../features/admin/screens/admin_dashboard_screen.dart';
+import '../features/admin/screens/add_product_screen.dart';
+import '../features/admin/screens/edit_product_screen.dart';
+import '../features/admin/screens/manage_pricing_screen.dart';
+import '../features/admin/screens/product_list_admin.dart';
 import '../features/orders/models/order_model.dart';
 import '../features/orders/screens/order_summary_screen.dart';
 import '../features/orders/screens/order_history_screen.dart';
@@ -14,16 +18,19 @@ import '../features/orders/screens/order_detail_screen.dart';
 import '../features/notifications/screens/notifications_screen.dart';
 import '../features/checkout/screens/checkout_screen.dart';
 import '../features/inventory/screens/inventory_screen.dart';
+import '../features/products/models/product_model.dart';
+import '../features/products/services/product_service.dart';
 
 class AppRoutes {
   static const String phoneInput = '/';
-  static const String otp        = '/otp';
-  static const String home       = '/home';
+  static const String otp = '/otp';
+  static const String home = '/home';
   static const String adminLogin = '/admin-login';
-  static const String adminHome  = '/admin';
-  static const String inventory  = '/inventory';
-  static const String checkout   = '/checkout';
-  static const String orders     = '/orders';
+  static const String adminHome = '/admin';
+  static const String inventory = '/inventory';
+  static const String adminProducts = '/admin/products';
+  static const String checkout = '/checkout';
+  static const String orders = '/orders';
   static const String notifications = '/notifications';
   static const String orderSummary = '/order-summary';
   static const String orderDetail = '/order';
@@ -59,7 +66,8 @@ class AppRouter {
 
         // Admin Routes Protection
         if (state.matchedLocation == AppRoutes.adminHome ||
-            state.matchedLocation == AppRoutes.inventory) {
+            state.matchedLocation == AppRoutes.inventory ||
+            state.matchedLocation.startsWith(AppRoutes.adminProducts)) {
           // Only allow admins to access admin dashboard and inventory
           if (isAdminLoggedIn && role == 'admin') {
             return null; // Allow access
@@ -150,6 +158,70 @@ class AppRouter {
           builder: (context, state) => const InventoryScreen(),
         ),
 
+        GoRoute(
+          path: AppRoutes.adminProducts,
+          name: 'adminProducts',
+          builder: (context, state) => const ProductListAdmin(),
+        ),
+
+        GoRoute(
+          path: '${AppRoutes.adminProducts}/add',
+          name: 'addProduct',
+          builder: (context, state) => const AddProductScreen(),
+        ),
+
+        GoRoute(
+          path: '${AppRoutes.adminProducts}/:productId/edit',
+          name: 'editProduct',
+          builder: (context, state) {
+            final productId = state.pathParameters['productId'] ?? '';
+            return EditProductScreen(
+              productId: productId,
+              initialProduct: state.extra as ProductModel?,
+            );
+          },
+        ),
+
+        GoRoute(
+          path: '${AppRoutes.adminProducts}/:productId/pricing',
+          name: 'managePricing',
+          builder: (context, state) {
+            final productId = state.pathParameters['productId'] ?? '';
+            final product = state.extra as ProductModel?;
+            if (product != null) {
+              return ManagePricingScreen(
+                productId: product.id,
+                productName: product.name,
+                basePrice: product.price,
+              );
+            }
+
+            return FutureBuilder<ProductModel?>(
+              future: ProductService().getProductById(productId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                final loadedProduct = snapshot.data;
+                if (loadedProduct == null) {
+                  return const Scaffold(
+                    body: Center(child: Text('Product not found')),
+                  );
+                }
+
+                return ManagePricingScreen(
+                  productId: loadedProduct.id,
+                  productName: loadedProduct.name,
+                  basePrice: loadedProduct.price,
+                );
+              },
+            );
+          },
+        ),
+
         // ========== CHECKOUT & ORDER ROUTES (Customer) ==========
 
         GoRoute(
@@ -170,10 +242,12 @@ class AppRouter {
           path: AppRoutes.orders,
           name: 'orders',
           builder: (context, state) {
-            final phoneNumber = FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
+            final phoneNumber =
+                FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
             return OrderHistoryScreen(
               customerId: phoneNumber,
-              onOrderTap: (orderId) => context.push('${AppRoutes.orderDetail}/$orderId'),
+              onOrderTap: (orderId) =>
+                  context.push('${AppRoutes.orderDetail}/$orderId'),
             );
           },
         ),
@@ -182,7 +256,8 @@ class AppRouter {
           path: AppRoutes.notifications,
           name: 'notifications',
           builder: (context, state) {
-            final phoneNumber = FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
+            final phoneNumber =
+                FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
             return NotificationsScreen(userId: phoneNumber);
           },
         ),
@@ -276,7 +351,8 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const Scaffold(
             body: Center(
-              child: Text('Page not found', style: TextStyle(color: Colors.white)),
+              child:
+                  Text('Page not found', style: TextStyle(color: Colors.white)),
             ),
           ),
         );

@@ -23,8 +23,10 @@ dependencies:
   provider: ^6.1.1
   cached_network_image: ^3.3.1
   image_picker: ^1.0.8
+  flutter_image_compress: ^2.3.0
+  file_picker: ^8.1.7
   qr_flutter: ^4.1.0
-  fl_chart: ^0.71.0
+  fl_chart: 0.66.2
 
 dev_dependencies:
   flutter_test:
