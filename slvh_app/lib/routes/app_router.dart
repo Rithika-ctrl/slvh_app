@@ -6,7 +6,7 @@ import '../features/auth/screens/phone_input_screen.dart';
 import '../features/auth/screens/otp_screen.dart';
 import '../features/auth/screens/home_screen.dart';
 import '../features/auth/screens/admin_login_screen.dart';
-import '../features/auth/screens/admin_dashboard.dart';
+import '../features/admin/screens/admin_dashboard_screen.dart';
 import '../features/orders/models/order_model.dart';
 import '../features/orders/screens/order_summary_screen.dart';
 import '../features/orders/screens/order_history_screen.dart';
@@ -141,7 +141,7 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.adminHome,
           name: 'adminHome',
-          builder: (context, state) => const AdminDashboard(),
+          builder: (context, state) => const AdminDashboardScreen(),
         ),
 
         GoRoute(
@@ -269,7 +269,7 @@ class AppRouter {
 
       case AppRoutes.adminHome:
         return MaterialPageRoute(
-          builder: (_) => const AdminDashboard(),
+          builder: (_) => const AdminDashboardScreen(),
         );
 
       default:
@@ -283,4 +283,3 @@ class AppRouter {
     }
   }
 }
-
