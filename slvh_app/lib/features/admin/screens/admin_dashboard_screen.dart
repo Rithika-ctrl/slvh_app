@@ -124,6 +124,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             runSpacing: 10,
             children: [
               _QuickActionButton(
+                icon: Icons.analytics_outlined,
+                label: 'Analytics',
+                onPressed: () => context.push('/admin/analytics'),
+              ),
+              _QuickActionButton(
                 icon: Icons.shopping_bag_outlined,
                 label: 'Products',
                 onPressed: () => context.push('/admin/products'),
