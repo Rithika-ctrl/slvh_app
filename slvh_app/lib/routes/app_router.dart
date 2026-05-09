@@ -11,6 +11,7 @@ import '../features/orders/models/order_model.dart';
 import '../features/orders/screens/order_summary_screen.dart';
 import '../features/orders/screens/order_history_screen.dart';
 import '../features/orders/screens/order_detail_screen.dart';
+import '../features/notifications/screens/notifications_screen.dart';
 import '../features/checkout/screens/checkout_screen.dart';
 
 class AppRoutes {
@@ -21,6 +22,7 @@ class AppRoutes {
   static const String adminHome  = '/admin';
   static const String checkout   = '/checkout';
   static const String orders     = '/orders';
+  static const String notifications = '/notifications';
   static const String orderSummary = '/order-summary';
   static const String orderDetail = '/order';
 }
@@ -164,6 +166,15 @@ class AppRouter {
               customerId: phoneNumber,
               onOrderTap: (orderId) => context.push('${AppRoutes.orderDetail}/$orderId'),
             );
+          },
+        ),
+
+        GoRoute(
+          path: AppRoutes.notifications,
+          name: 'notifications',
+          builder: (context, state) {
+            final phoneNumber = FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
+            return NotificationsScreen(userId: phoneNumber);
           },
         ),
 

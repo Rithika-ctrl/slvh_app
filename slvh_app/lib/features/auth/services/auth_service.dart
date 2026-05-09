@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:slvh_app/features/notifications/services/notification_service.dart';
 
 /// FAKE OTP Authentication Service
 /// 
@@ -217,6 +218,14 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_isLoggedInKey, true);
       await prefs.setString(_phoneNumberKey, phoneNumber);
+
+      // Save FCM token for push notifications
+      try {
+        await NotificationService().saveFCMTokenForUser(phoneNumber);
+      } catch (e) {
+        print('⚠️ Failed to save FCM token: $e');
+        // Don't throw - login should still succeed even if FCM fails
+      }
     } catch (e) {
       throw Exception('Failed to save login state: ${e.toString()}');
     }

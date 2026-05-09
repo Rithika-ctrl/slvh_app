@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
+import 'package:slvh_app/features/notifications/services/notification_service.dart';
 
 /// Service for managing orders (Firestore operations)
 /// Uses batch writes for atomic operations (create order + reduce stock)
@@ -141,12 +142,86 @@ class OrderService {
     OrderStatus newStatus,
   ) async {
     try {
+      // Fetch the order to get customer info
+      final order = await getOrder(orderId);
+      if (order == null) {
+        throw Exception('Order not found');
+      }
+
+      // Update order status in Firestore
       await _firestore.collection('orders').doc(orderId).update({
         'status': newStatus.name,
         'updatedAt': DateTime.now(),
       });
+
+      // Send notification to customer based on new status
+      _sendOrderStatusNotification(
+        orderId: orderId,
+        customerId: order.customerId,
+        newStatus: newStatus,
+      );
     } catch (e) {
       throw Exception('Failed to update order status: $e');
+    }
+  }
+
+  /// Send notification to customer when order status changes
+  Future<void> _sendOrderStatusNotification({
+    required String orderId,
+    required String customerId,
+    required OrderStatus newStatus,
+  }) async {
+    try {
+      final notificationService = NotificationService();
+
+      String title = '';
+      String body = '';
+      String? statusLabel;
+
+      switch (newStatus) {
+        case OrderStatus.confirmed:
+          title = '✅ Order Confirmed';
+          body = 'Your payment has been verified. Your order is confirmed!';
+          statusLabel = 'Confirmed';
+          break;
+        case OrderStatus.preparing:
+          title = '🍳 Preparing Your Order';
+          body = 'We are preparing your order now.';
+          statusLabel = 'Preparing';
+          break;
+        case OrderStatus.readyForPickup:
+          title = '📦 Ready for Pickup!';
+          body = 'Your order is ready! Come pick it up now.';
+          statusLabel = 'Ready for Pickup';
+          break;
+        case OrderStatus.completed:
+          title = '✓ Order Completed';
+          body = 'Thank you for your order!';
+          statusLabel = 'Completed';
+          break;
+        case OrderStatus.cancelled:
+          title = '❌ Order Cancelled';
+          body = 'Your order has been cancelled.';
+          statusLabel = 'Cancelled';
+          break;
+        default:
+          return; // Don't send notification for other statuses
+      }
+
+      // Save notification to Firestore
+      await notificationService.saveNotification(
+        userId: customerId,
+        title: title,
+        body: body,
+        orderId: orderId,
+        orderStatus: statusLabel,
+        actionUrl: '/order/$orderId',
+      );
+
+      print('✅ Notification sent to customer: $customerId');
+    } catch (e) {
+      print('⚠️ Failed to send notification: $e');
+      // Don't throw - order status update should succeed even if notification fails
     }
   }
 
