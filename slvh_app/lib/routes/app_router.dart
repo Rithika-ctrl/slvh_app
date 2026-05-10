@@ -26,6 +26,9 @@ import '../features/inventory/screens/inventory_screen.dart';
 import '../features/products/models/product_model.dart';
 import '../features/products/services/product_service.dart';
 import '../features/profile/screens/profile_screen.dart';
+import '../features/products/screens/product_list_screen.dart';
+import '../features/products/screens/product_detail_screen.dart';
+import '../features/cart/screens/cart_screen.dart';
 
 class AppRoutes {
   static const String phoneInput = '/';
@@ -46,6 +49,8 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String orderSummary = '/order-summary';
   static const String orderDetail = '/order';
+  static const String products = '/products';
+  static const String cart = '/cart';
 }
 
 /// GoRouter configuration with route guards and role-based access control
@@ -280,6 +285,27 @@ class AppRouter {
         ),
 
         // ========== CHECKOUT & ORDER ROUTES (Customer) ==========
+
+        GoRoute(
+          path: AppRoutes.products,
+          name: 'products',
+          builder: (context, state) => const ProductListScreen(),
+        ),
+
+        GoRoute(
+          path: '${AppRoutes.products}/:productId',
+          name: 'productDetail',
+          builder: (context, state) {
+            final productId = state.pathParameters['productId'] ?? '';
+            return ProductDetailScreen(productId: productId);
+          },
+        ),
+
+        GoRoute(
+          path: AppRoutes.cart,
+          name: 'cart',
+          builder: (context, state) => const CartScreen(),
+        ),
 
         GoRoute(
           path: AppRoutes.checkout,

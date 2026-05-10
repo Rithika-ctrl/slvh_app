@@ -109,6 +109,7 @@ class _OTPScreenState extends State<OTPScreen>
     final isValid = await _authService.verifyOTP(
       otp: _fullOTP,
       phoneNumber: widget.phoneNumber,
+      verificationId: widget.verificationId,
       onError: (msg) {
         setState(() {
           _isLoading = false;

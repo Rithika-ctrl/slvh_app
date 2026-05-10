@@ -1,276 +1,267 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
 
-/// FAKE OTP Authentication Service
-/// 
-/// This service uses a FAKE OTP system (123456) for development purposes.
-/// 
-/// TO REPLACE WITH REAL FIREBASE OTP:
-/// 1. Import firebase_auth package
-/// 2. Replace _sendFakeOTP() with Firebase verifyPhoneNumber()
-/// 3. Replace _verifyFakeOTP() with Firebase credential verification
-/// 4. Update error handling as needed
-/// 
+/// Real Firebase Authentication Service
+///
+/// Customer login  → Firebase Phone Auth (SMS OTP)
+/// Admin login     → Firebase Email/Password Auth
 class AuthService {
-  // ============= FAKE OTP CONSTANTS =============
-  // TODO: Replace these with Firebase configuration when needed
-  static const String FAKE_OTP = '123456'; // Fixed OTP for development
-  
-  // Storage keys
-  static const String _isLoggedInKey = 'user_logged_in';
-  static const String _phoneNumberKey = 'user_phone_number';
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // ============= PUBLIC METHODS =============
+  // ─── Storage keys ────────────────────────────────────────────
+  static const String _isLoggedInKey   = 'user_logged_in';
+  static const String _phoneNumberKey  = 'user_phone_number';
+  static const String _adminLoginKey   = 'admin_logged_in';
+  static const String _adminEmailKey   = 'admin_email';
 
-  /// Simulate sending OTP to phone number
-  /// In real Firebase, this would call verifyPhoneNumber()
+  // ─── Admin e-mail whitelist ───────────────────────────────────
+  // Real admin accounts must exist in Firebase Authentication.
+  static const List<String> _adminEmailWhitelist = [
+    'admin@smartshop.com',
+  ];
+
+  // =========================================================
+  // CUSTOMER – Firebase Phone Auth (SMS OTP)
+  // =========================================================
+
   Future<void> sendOTP({
     required String phoneNumber,
     required Function(String verificationId, int? resendToken) onCodeSent,
     required Function(String errorMessage) onError,
   }) async {
-    try {
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 1));
+    final normalised = phoneNumber.startsWith('+')
+        ? phoneNumber
+        : '+91${phoneNumber.replaceAll(RegExp(r'\D'), '')}';
 
-      // Simulate OTP sent successfully
-      // In real Firebase: the onCodeSent callback gets called by Firebase
-      onCodeSent('fake_verification_id_$phoneNumber', null);
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: normalised,
+        timeout: const Duration(seconds: 120),
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          try {
+            final result = await _auth.signInWithCredential(credential);
+            final phone = result.user?.phoneNumber ?? normalised;
+            await _saveCustomerSession(phone);
+          } catch (_) {}
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          onError(e.message ?? 'Phone verification failed.');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          onCodeSent(verificationId, resendToken);
+        },
+        codeAutoRetrievalTimeout: (_) {},
+      );
     } catch (e) {
       onError('Failed to send OTP: ${e.toString()}');
     }
   }
 
-  /// Verify OTP against the fixed FAKE_OTP
-  /// In real Firebase, this would create PhoneAuthCredential and sign in
   Future<bool> verifyOTP({
     required String otp,
     required String phoneNumber,
+    String verificationId = '',
     required Function(String errorMessage) onError,
   }) async {
     try {
-      // Simulate network delay
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      // Check if OTP matches the fixed OTP
-      if (otp == FAKE_OTP) {
-        // Save login state to SharedPreferences
-        await _saveLoginState(phoneNumber);
-        return true;
-      } else {
-        onError('Invalid OTP. Hint: Use 123456 for development');
-        return false;
-      }
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otp,
+      );
+      final result = await _auth.signInWithCredential(credential);
+      final phone = result.user?.phoneNumber ??
+          '+91${phoneNumber.replaceAll(RegExp(r'\D'), '')}';
+      await _saveCustomerSession(phone);
+      return true;
+    } on FirebaseAuthException catch (e) {
+      onError(e.message ?? 'Invalid OTP. Please try again.');
+      return false;
     } catch (e) {
       onError('Verification failed: ${e.toString()}');
       return false;
     }
   }
 
-  /// Check if user is logged in
-  Future<bool> isUserLoggedIn() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_isLoggedInKey) ?? false;
-    } catch (e) {
-      return false;
-    }
-  }
+  // =========================================================
+  // ADMIN – Firebase Email / Password Auth
+  // =========================================================
 
-  /// Get current user's phone number
-  Future<String?> getCurrentUserPhone() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(_phoneNumberKey);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Sign out user
-  Future<void> signOut() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_isLoggedInKey);
-      await prefs.remove(_phoneNumberKey);
-      await prefs.remove(_adminLoginKey);
-      await prefs.remove(_adminEmailKey);
-    } catch (e) {
-      // Handle error silently
-    }
-  }
-
-  // ============= ADMIN LOGIN (FAKE - FOR DEVELOPMENT) =============
-
-  static const String _adminLoginKey = 'admin_logged_in';
-  static const String _adminEmailKey = 'admin_email';
-  
-  // Fake admin credentials (for development only)
-  static const String FAKE_ADMIN_EMAIL = 'admin@smartshop.com';
-  static const String FAKE_ADMIN_PASSWORD = 'admin123';
-
-  /// Admin login with email and password (FAKE - for development)
-  /// In production, replace with Firebase Authentication
   Future<bool> adminLogin({
     required String email,
     required String password,
     required Function(String errorMessage) onError,
   }) async {
     try {
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 1));
+      final result = await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
 
-      // Fake admin verification
-      if (email == FAKE_ADMIN_EMAIL && password == FAKE_ADMIN_PASSWORD) {
-        // Save admin login state
-        await _saveAdminLoginState(email);
-        return true;
-      } else {
-        onError('Invalid email or password');
+      final signedInEmail = result.user?.email ?? '';
+
+      if (!_adminEmailWhitelist
+          .any((e) => e.toLowerCase() == signedInEmail.toLowerCase())) {
+        await _auth.signOut();
+        onError('This account does not have admin access.');
         return false;
       }
+
+      await _saveAdminSession(signedInEmail);
+      return true;
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'user-not-found':
+          onError('No admin account found for this email.');
+          break;
+        case 'wrong-password':
+        case 'invalid-credential':
+          onError('Incorrect password. Please try again.');
+          break;
+        case 'invalid-email':
+          onError('Please enter a valid email address.');
+          break;
+        case 'too-many-requests':
+          onError('Too many failed attempts. Please wait and try again.');
+          break;
+        default:
+          onError(e.message ?? 'Login failed. Please try again.');
+      }
+      return false;
     } catch (e) {
       onError('Login failed: ${e.toString()}');
       return false;
     }
   }
 
-  /// Check if admin is logged in
-  Future<bool> isAdminLoggedIn() async {
+  // =========================================================
+  // SESSION STATE
+  // =========================================================
+
+  Future<bool> isUserLoggedIn() async {
+    if (_auth.currentUser?.phoneNumber != null) return true;
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_adminLoginKey) ?? false;
-    } catch (e) {
+      return prefs.getBool(_isLoggedInKey) ?? false;
+    } catch (_) {
       return false;
     }
   }
 
-  /// Get current admin email
+  Future<bool> isAdminLoggedIn() async {
+    if (_auth.currentUser?.email != null) {
+      final email = _auth.currentUser!.email!;
+      if (_adminEmailWhitelist
+          .any((e) => e.toLowerCase() == email.toLowerCase())) {
+        return true;
+      }
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_adminLoginKey) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<String?> getCurrentUserPhone() async {
+    if (_auth.currentUser?.phoneNumber != null) {
+      return _auth.currentUser!.phoneNumber;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_phoneNumberKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<String?> getCurrentAdminEmail() async {
+    if (_auth.currentUser?.email != null) return _auth.currentUser!.email;
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_adminEmailKey);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
-  // ============= ROLE-BASED ACCESS =============
+  Future<void> signOut() async {
+    await _auth.signOut();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_isLoggedInKey);
+      await prefs.remove(_phoneNumberKey);
+      await prefs.remove(_adminLoginKey);
+      await prefs.remove(_adminEmailKey);
+    } catch (_) {}
+  }
 
-  /// Get user role from Firestore
-  /// Returns: 'customer', 'admin', or null if not found
+  // =========================================================
+  // ROLE-BASED ACCESS
+  // =========================================================
+
   Future<String?> getUserRole(String phoneNumber) async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(phoneNumber)
-          .get();
-      
-      if (doc.exists) {
-        return doc.data()?['role'] as String?;
-      }
+      final doc = await _db.collection('users').doc(phoneNumber).get();
+      if (doc.exists) return doc.data()?['role'] as String?;
       return null;
-    } catch (e) {
-      print('Error fetching user role: $e');
+    } catch (_) {
       return null;
     }
   }
 
-  /// Get admin role from SharedPreferences
-  /// Returns: 'admin' if logged in, null otherwise
   Future<String?> getAdminRole() async {
-    try {
-      final isAdmin = await isAdminLoggedIn();
-      return isAdmin ? 'admin' : null;
-    } catch (e) {
-      return null;
-    }
+    final isAdmin = await isAdminLoggedIn();
+    return isAdmin ? 'admin' : null;
   }
 
-  /// Get current user role (customer or admin)
   Future<String?> getCurrentUserRole() async {
-    try {
-      // Check if admin is logged in first
-      final adminRole = await getAdminRole();
-      if (adminRole != null) {
-        return adminRole;
-      }
-
-      // Otherwise check customer role
-      final phoneNumber = await getCurrentUserPhone();
-      if (phoneNumber != null) {
-        return await getUserRole(phoneNumber);
-      }
-
-      return null;
-    } catch (e) {
-      print('Error getting current user role: $e');
-      return null;
-    }
+    final adminRole = await getAdminRole();
+    if (adminRole != null) return adminRole;
+    final phone = await getCurrentUserPhone();
+    if (phone != null) return await getUserRole(phone);
+    return null;
   }
 
-  // ============= PRIVATE METHODS =============
+  // =========================================================
+  // PRIVATE HELPERS
+  // =========================================================
 
-  /// Save login state to SharedPreferences
-  Future<void> _saveLoginState(String phoneNumber) async {
+  Future<void> _saveCustomerSession(String phoneNumber) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_isLoggedInKey, true);
       await prefs.setString(_phoneNumberKey, phoneNumber);
 
-      // Save FCM token for push notifications
+      // Ensure Firestore user doc exists
+      final doc = _db.collection('users').doc(phoneNumber);
+      final snap = await doc.get();
+      if (!snap.exists) {
+        await doc.set({
+          'phone': phoneNumber,
+          'role': 'customer',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
       try {
         await NotificationService().saveFCMTokenForUser(phoneNumber);
-      } catch (e) {
-        print('⚠️ Failed to save FCM token: $e');
-        // Don't throw - login should still succeed even if FCM fails
-      }
+      } catch (_) {}
     } catch (e) {
       throw Exception('Failed to save login state: ${e.toString()}');
     }
   }
 
-  /// Save admin login state to SharedPreferences
-  Future<void> _saveAdminLoginState(String email) async {
+  Future<void> _saveAdminSession(String email) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_adminLoginKey, true);
       await prefs.setString(_adminEmailKey, email);
     } catch (e) {
-      throw Exception('Failed to save admin login state: ${e.toString()}');
+      throw Exception('Failed to save admin session: ${e.toString()}');
     }
   }
-
-  // ============= FIREBASE MIGRATION GUIDE =============
-  /*
-   * When ready to switch to real Firebase OTP:
-   * 
-   * 1. Add this to sendOTP():
-   *    final FirebaseAuth _auth = FirebaseAuth.instance;
-   *    await _auth.verifyPhoneNumber(
-   *      phoneNumber: phoneNumber,
-   *      verificationCompleted: (PhoneAuthCredential credential) async {
-   *        await _auth.signInWithCredential(credential);
-   *      },
-   *      verificationFailed: (FirebaseAuthException e) {
-   *        onError(e.message ?? 'Verification failed');
-   *      },
-   *      codeSent: (String verificationId, int? resendToken) {
-   *        onCodeSent(verificationId, resendToken);
-   *      },
-   *      codeAutoRetrievalTimeout: (String verificationId) {},
-   *      timeout: const Duration(seconds: 120),
-   *    );
-   * 
-   * 2. Replace verifyOTP() with:
-   *    PhoneAuthCredential credential = PhoneAuthProvider.credential(
-   *      verificationId: verificationId,
-   *      smsCode: otp,
-   *    );
-   *    UserCredential userCredential = await _auth.signInWithCredential(credential);
-   *    await _saveLoginState(userCredential.user!.phoneNumber ?? phoneNumber);
-   *    return true;
-   */
 }
-
