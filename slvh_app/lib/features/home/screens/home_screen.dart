@@ -203,7 +203,9 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
       child: Row(
         children: [
-          Container(
+          GestureDetector(
+            onTap: () => context.push('/profile'),
+            child: Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
@@ -220,6 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child:
                 const Center(child: Text('👤', style: TextStyle(fontSize: 22))),
+          ),
           ),
           const SizedBox(width: 12),
           Expanded(

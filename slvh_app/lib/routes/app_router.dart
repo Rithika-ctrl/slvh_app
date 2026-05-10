@@ -25,6 +25,7 @@ import '../features/checkout/screens/checkout_screen.dart';
 import '../features/inventory/screens/inventory_screen.dart';
 import '../features/products/models/product_model.dart';
 import '../features/products/services/product_service.dart';
+import '../features/profile/screens/profile_screen.dart';
 
 class AppRoutes {
   static const String phoneInput = '/';
@@ -42,6 +43,7 @@ class AppRoutes {
   static const String checkout = '/checkout';
   static const String orders = '/orders';
   static const String notifications = '/notifications';
+  static const String profile = '/profile';
   static const String orderSummary = '/order-summary';
   static const String orderDetail = '/order';
 }
@@ -97,6 +99,7 @@ class AppRouter {
 
         // Customer Routes Protection (home, checkout, orders, order details)
         if (state.matchedLocation == AppRoutes.home ||
+            state.matchedLocation == AppRoutes.profile ||
             state.matchedLocation == AppRoutes.checkout ||
             state.matchedLocation == AppRoutes.orders ||
             state.matchedLocation == AppRoutes.orderSummary ||
@@ -314,6 +317,12 @@ class AppRouter {
                 FirebaseAuth.instance.currentUser?.phoneNumber ?? '';
             return NotificationsScreen(userId: phoneNumber);
           },
+        ),
+
+        GoRoute(
+          path: AppRoutes.profile,
+          name: 'profile',
+          builder: (context, state) => const ProfileScreen(),
         ),
 
         GoRoute(
