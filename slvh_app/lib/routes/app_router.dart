@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../features/auth/services/auth_service.dart';
 import '../features/auth/screens/phone_input_screen.dart';
 import '../features/auth/screens/otp_screen.dart';
-import '../features/auth/screens/home_screen.dart';
+import '../features/home/screens/home_screen.dart';
 import '../features/auth/screens/admin_login_screen.dart';
 import '../features/admin/screens/admin_dashboard_screen.dart';
 import '../features/admin/screens/add_product_screen.dart';
