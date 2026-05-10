@@ -6,6 +6,7 @@ import '../../../shared/widgets/gradient_background.dart';
 import '../services/auth_service.dart';
 import '../../categories/services/category_service.dart';
 import '../../categories/widgets/category_card.dart';
+import '../../banners/widgets/banner_carousel.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -94,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
         slivers: [
           SliverToBoxAdapter(child: _buildAppBar()),
           SliverToBoxAdapter(child: _buildSearchBar()),
-          SliverToBoxAdapter(child: _buildOfferBanner()),
+          SliverToBoxAdapter(child: const BannerCarousel()),
           SliverToBoxAdapter(child: _buildSectionHeader('Shop by Category', '🟠', color: AppColors.orange)),
           SliverToBoxAdapter(child: _buildCategories()),
           SliverToBoxAdapter(child: _buildSectionHeader('Top Picks', '🩷', color: AppColors.catPink)),
