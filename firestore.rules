@@ -61,6 +61,11 @@ service cloud.firestore {
       allow update: if resource.data.customerId == request.auth.token.phone_number &&
                        resource.data.status == 'paymentRetryPending';
       
+      // Users can cancel their own orders when pending payment verification
+      allow update: if resource.data.customerId == request.auth.token.phone_number &&
+                       resource.data.status == 'paymentVerificationPending' &&
+                       request.resource.data.status == 'cancelled';
+      
       // Admin can update order status
       allow update: if isAdmin() || isCloudFunction();
     }

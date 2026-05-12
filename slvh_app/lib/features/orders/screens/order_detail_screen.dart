@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 import 'package:slvh_app/features/orders/services/order_service.dart';
+import 'package:slvh_app/features/orders/services/order_cancellation_service.dart';
 import 'package:slvh_app/features/orders/widgets/status_badge.dart';
+import 'package:slvh_app/features/orders/widgets/cancel_order_dialog.dart';
 
 /// Order detail screen showing full order information and real-time status
 class OrderDetailScreen extends StatefulWidget {
@@ -81,6 +83,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
                 // Pickup information
                 _buildPickupInformationCard(order),
+                const SizedBox(height: 24),
+
+                // Cancel order button (visible only when payment verification pending)
+                if (order.status == OrderStatus.paymentVerificationPending)
+                  _buildCancelOrderButton(context, order),
                 const SizedBox(height: 24),
               ],
             ),
@@ -359,6 +366,97 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ],
       ),
     );
+  }
+
+  /// Build cancel order button
+  Widget _buildCancelOrderButton(BuildContext context, OrderModel order) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red[200]!, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.red[700], size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Order Cancellation',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red[700],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'You can cancel this order before the vendor starts preparation.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => _showCancelOrderDialog(context, order),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[600],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Cancel Order',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show cancel order confirmation dialog
+  Future<void> _showCancelOrderDialog(BuildContext context, OrderModel order) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => CancelOrderDialog(order: order),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Order cancelled successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      // Navigate back to order history
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
   }
 }
 

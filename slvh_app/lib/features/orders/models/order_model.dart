@@ -105,10 +105,12 @@ class OrderModel {
   final String pickupDate; // YYYY-MM-DD format
   final String pickupTime; // HH:MM format
   final String pickupSlotId; // Reference to slot
+  final String? cancellationReason; // Reason if order was cancelled
 
   final DateTime createdAt;
   final DateTime? updatedAt;
   final DateTime? lastRetryAt; // Timestamp of last retry attempt
+  final DateTime? cancelledAt; // When order was cancelled
   final DateTime? completedAt; // When order was completed
 
   OrderModel({
@@ -126,9 +128,11 @@ class OrderModel {
     required this.pickupDate,
     required this.pickupTime,
     required this.pickupSlotId,
+    this.cancellationReason,
     required this.createdAt,
     this.updatedAt,
     this.lastRetryAt,
+    this.cancelledAt,
     this.completedAt,
   });
 
@@ -165,9 +169,11 @@ class OrderModel {
       'pickupDate': pickupDate,
       'pickupTime': pickupTime,
       'pickupSlotId': pickupSlotId,
+      'cancellationReason': cancellationReason,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
       'lastRetryAt': lastRetryAt,
+      'cancelledAt': cancelledAt,
       'completedAt': completedAt,
     };
   }
@@ -195,9 +201,11 @@ class OrderModel {
       pickupDate: data['pickupDate'] ?? '',
       pickupTime: data['pickupTime'] ?? '',
       pickupSlotId: data['pickupSlotId'] ?? '',
+      cancellationReason: data['cancellationReason'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
       lastRetryAt: (data['lastRetryAt'] as Timestamp?)?.toDate(),
+      cancelledAt: (data['cancelledAt'] as Timestamp?)?.toDate(),
       completedAt: (data['completedAt'] as Timestamp?)?.toDate(),
     );
   }
@@ -218,9 +226,11 @@ class OrderModel {
     String? pickupDate,
     String? pickupTime,
     String? pickupSlotId,
+    String? cancellationReason,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastRetryAt,
+    DateTime? cancelledAt,
     DateTime? completedAt,
   }) {
     return OrderModel(
@@ -238,9 +248,11 @@ class OrderModel {
       pickupDate: pickupDate ?? this.pickupDate,
       pickupTime: pickupTime ?? this.pickupTime,
       pickupSlotId: pickupSlotId ?? this.pickupSlotId,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastRetryAt: lastRetryAt ?? this.lastRetryAt,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
       completedAt: completedAt ?? this.completedAt,
     );
   }
