@@ -1,163 +1,456 @@
 rules_version = '2';
+
+/**
+ * SLVH Smart Shop - Firestore Security Rules (Feature 9)
+ * 
+ * Purpose: Enforce role-based access control (RBAC) to prevent unauthorized data access
+ * 
+ * Security Model:
+ * - Customers: Read products, read/write own orders and cart only
+ * - Admins: Full access to all collections for management
+ * - Cloud Functions: Write access for backend operations (notifications, analytics)
+ * - Default: DENY ALL (fail-safe approach)
+ * 
+ * Problem Solved:
+ * Default Firestore rules allow all read/write → any user could:
+ *   ❌ Delete products
+ *   ❌ Read all orders (privacy breach)
+ *   ❌ Modify other users' cart
+ *   ❌ Change payment status
+ * 
+ * Solution: Granular rules with explicit allow/deny at collection and document level
+ */
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    
+    // ========================================================================
+    // HELPER FUNCTIONS - Reusable access control logic
+    // ========================================================================
+
+    /// Check if request is authenticated (user logged in)
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    /// Check if user is admin (verified by email in auth token)
     function isAdmin() {
       return request.auth.token.email == 'admin@smartshop.com';
     }
 
-    function isOwner(uid) {
-      return request.auth.uid == uid;
-    }
-
+    /// Check if user owns document by phone number (customer auth)
     function isPhoneOwner(phoneNumber) {
       return request.auth.token.phone_number == phoneNumber;
     }
 
+    /// Check if request is from Cloud Function (backend operations)
     function isCloudFunction() {
-      return request.auth.uid == null && request.auth.token.iss == 'https://securetoken.google.com/slvh-b707f';
+      return request.auth.uid == null && 
+             request.auth.token.iss == 'https://securetoken.google.com/slvh-b707f';
     }
 
-    // ========== USERS COLLECTION (by phone) ==========
+    /// Get current user's phone number for ownership checks
+    function getUserPhone() {
+      return request.auth.token.phone_number;
+    }
+
+    /// Validate data structure for orders (prevent invalid writes)
+    function isValidOrder(data) {
+      return data.customerId != null &&
+             data.status != null &&
+             data.totalAmount != null &&
+             data.createdAt != null;
+    }
+
+    /// Validate data structure for payments
+    function isValidPayment(data) {
+      return data.customerId != null &&
+             data.amount != null &&
+             data.transactionId != null;
+    }
+
+    /// Validate data structure for products
+    function isValidProduct(data) {
+      return data.name != null &&
+             data.price != null &&
+             data.category != null;
+    }
+
+// ========================================================================
+    // USERS COLLECTION (by phone number)
+    // ========================================================================
+    /// 
+    /// Access Control:
+    /// - Customers: Read/write own user document only
+    /// - Admins: Read all, write all
+    /// - Cloud Functions: Read all, write for backend ops
+    /// 
+    /// Example paths:
+    ///   /users/9876543210
+    ///   /users/9876543210/notifications/{notificationId}
+    ///   /users/9876543210/cart/{itemId}
     match /users/{phoneNumber} {
-      // User can read their own document
-      allow read: if isPhoneOwner(phoneNumber) || isAdmin() || isCloudFunction();
-      
-      // User can update their own document (includes cart, preferences)
-      allow update: if isPhoneOwner(phoneNumber) || isAdmin() || isCloudFunction();
-      
-      // Cloud Functions can write (for FCM token, notifications enabled, OTP resend throttling, etc.)
-      allow write: if isCloudFunction();
-      
-      // Notifications subcollection
-      match /notifications/{notificationId} {
-        // User can read their own notifications
-        allow read: if isPhoneOwner(phoneNumber);
-        
-        // Cloud Functions can write notifications
-        allow write: if isCloudFunction();
-      }
-
-      // Cart subcollection
-      match /cart/{document=**} {
-        // User can read their own cart
-        allow read: if isPhoneOwner(phoneNumber);
-        
-        // User can write their own cart (add, update, delete items)
-        allow write: if isPhoneOwner(phoneNumber);
-        
-        // Cloud Functions can manage cart
-        allow write: if isCloudFunction();
-      }
-    }
-
-    // ========== USERS COLLECTION (by UID for cart persistence) ==========
-    match /users_by_uid/{uid} {
-      // User can read and write their own cart data
-      allow read, write: if request.auth.uid == uid;
-      
-      // Cart subcollection
-      match /cart/{document=**} {
-        // User can read and write their own cart
-        allow read, write: if request.auth.uid == uid;
-        
-        // Cloud Functions can manage cart
-        allow write: if isCloudFunction();
-      }
-    }
-
-    // ========== ORDERS COLLECTION ==========
-    match /orders/{orderId} {
-      // Users can read their own orders
-      allow read: if resource.data.customerId == request.auth.token.phone_number;
-      
-      // Admin can read all orders
+      // ─── READ ─────────────────────────────────────────────
+      /// User can read own document
+      allow read: if isPhoneOwner(phoneNumber);
+      /// Admin can read all users
       allow read: if isAdmin();
-      
-      // Cloud Functions can read orders
+      /// Cloud Functions can read (backend operations)
       allow read: if isCloudFunction();
-      
-      // Users can create orders (including draft orders for retry)
-      allow create: if request.auth.token.phone_number != null;
-      
-      // Users can update their own draft orders (payment_retry_pending status)
-      allow update: if resource.data.customerId == request.auth.token.phone_number &&
-                       resource.data.status == 'paymentRetryPending';
-      
-      // Users can cancel their own orders when pending payment verification
-      allow update: if resource.data.customerId == request.auth.token.phone_number &&
-                       resource.data.status == 'paymentVerificationPending' &&
-                       request.resource.data.status == 'cancelled';
-      
-      // Admin can update order status
-      allow update: if isAdmin() || isCloudFunction();
-    }
 
-    // ========== PRODUCTS COLLECTION ==========
-    match /products/{productId} {
-      // Anyone can read products
-      allow read: if true;
-      
-      // Only admin can write
-      allow write: if isAdmin();
-    }
-
-    // ========== PRICING_TIERS COLLECTION ==========
-    match /pricing_tiers/{tierId} {
-      // Anyone can read
-      allow read: if true;
-      
-      // Only admin can write
-      allow write: if isAdmin();
-    }
-
-    // ========== PICKUP_SLOTS COLLECTION ==========
-    match /pickup_slots/{slotId} {
-      // Anyone can read
-      allow read: if true;
-      
-      // Only admin can write
-      allow write: if isAdmin() || isCloudFunction();
-    }
-
-    // ========== PAYMENTS COLLECTION ==========
-    match /payments/{paymentId} {
-      // Users can read their own payments
-      allow read: if resource.data.customerId == request.auth.token.phone_number;
-      
-      // Admin can read all
-      allow read: if isAdmin();
-      
-      // Users can create payments
-      allow create: if request.auth.token.phone_number != null;
-      
-      // Admin can update payment status (verify, reject, etc)
-      allow update: if isAdmin() || isCloudFunction();
-    }
-
-    // ========== WHATSAPP_LOGS COLLECTION ==========
-    match /whatsapp_logs/{logId} {
-      // Cloud Functions can write logs
+      // ─── WRITE (Create, Update, Delete) ──────────────────
+      /// User can update own document (profile, preferences, FCM token)
+      allow update: if isPhoneOwner(phoneNumber);
+      /// Admin can write (manage users, reset fields)
+      allow update: if isAdmin();
+      /// Cloud Functions can write (FCM token, notifications settings, resend throttling)
       allow write: if isCloudFunction();
-      
-      // Admin can read logs
+      /// Prevent user deletion (only delete with console)
+      allow delete: if false;
+
+      // ─── NOTIFICATIONS SUBCOLLECTION ──────────────────────
+      match /notifications/{notificationId} {
+        /// User can read own notifications
+        allow read: if isPhoneOwner(phoneNumber);
+        /// Admin can read all
+        allow read: if isAdmin();
+        /// Cloud Functions create and manage notifications
+        allow write: if isCloudFunction();
+      }
+
+      // ─── CART SUBCOLLECTION ───────────────────────────────
+      match /cart/{itemId} {
+        /// User can read own cart
+        allow read: if isPhoneOwner(phoneNumber);
+        /// User can modify own cart items
+        allow write: if isPhoneOwner(phoneNumber);
+        /// Cloud Functions can sync cart
+        allow write: if isCloudFunction();
+      }
+    }
+
+    // ========================================================================
+    // ORDERS COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: Create own orders, read own orders, update own (limited), read refund status
+    /// - Admins: Read all, update all (status, verify payment, create refund)
+    /// - Cloud Functions: Create/update for backend operations
+    ///
+    /// Order Lifecycle:
+    ///   CREATE → paymentPending → paymentVerified → shipped → delivered
+    ///            (or) paymentRejected → (retry allowed)
+    ///            (or) cancelled (if before delivery)
+    ///
+    match /orders/{orderId} {
+      // ─── READ ──────────────────────────────────────────────
+      /// Customers can read own orders only
+      allow read: if resource.data.customerId == getUserPhone();
+      /// Admins can read all orders
       allow read: if isAdmin();
+      /// Cloud Functions can read orders
+      allow read: if isCloudFunction();
+
+      // ─── CREATE ────────────────────────────────────────────
+      /// Customers can create own orders (checkout)
+      /// Validates: required fields present, valid status, customer ID matches
+      allow create: if isAuthenticated() &&
+                       request.resource.data.customerId == getUserPhone() &&
+                       isValidOrder(request.resource.data) &&
+                       request.resource.data.status == 'paymentPending' &&
+                       request.resource.data.createdAt == request.time;
+
+      // ─── UPDATE ────────────────────────────────────────────
+      /// Customers can update own draft orders for payment retry
+      allow update: if resource.data.customerId == getUserPhone() &&
+                       resource.data.status == 'paymentRetryPending' &&
+                       request.resource.data.status == 'paymentPending';
+
+      /// Customers can cancel orders in specific states
+      allow update: if resource.data.customerId == getUserPhone() &&
+                       (resource.data.status == 'paymentPending' ||
+                        resource.data.status == 'paymentVerificationPending' ||
+                        resource.data.status == 'paymentRetryPending') &&
+                       request.resource.data.status == 'cancelled' &&
+                       request.resource.data.cancelledAt == request.time;
+
+      /// Customers can only request refunds (not create directly)
+      allow update: if resource.data.customerId == getUserPhone() &&
+                       request.resource.data.refundStatus != null &&
+                       (resource.data.refundStatus == null || 
+                        resource.data.refundStatus == 'rejected');
+
+      /// Admins can update any field (status, verification, refund, etc.)
+      allow update: if isAdmin();
+
+      /// Cloud Functions can update (payment verification, notifications, stock update)
+      allow update: if isCloudFunction();
+
+      // ─── DELETE ────────────────────────────────────────────
+      /// No one can delete orders (audit trail)
+      allow delete: if false;
+
+      // ─── REFUNDS SUBCOLLECTION ────────────────────────────
+      match /refunds/{refundId} {
+        /// Customers can read own refunds
+        allow read: if resource.data.customerId == getUserPhone();
+        /// Admins can read all refunds
+        allow read: if isAdmin();
+        /// Cloud Functions manage refunds
+        allow write: if isCloudFunction();
+      }
+
+      // ─── PAYMENT_HISTORY SUBCOLLECTION ────────────────────
+      match /payment_history/{paymentAttemptId} {
+        /// Customers can read own payment history
+        allow read: if resource.data.customerId == getUserPhone();
+        /// Admins can read all
+        allow read: if isAdmin();
+        /// Cloud Functions log payments
+        allow write: if isCloudFunction();
+      }
     }
 
-    // ========== APP_SETTINGS COLLECTION ==========
-    match /app_settings/{document=**} {
-      // Only admin can write
-      allow write: if isAdmin() || isCloudFunction();
-      
-      // Anyone can read
+    // ========================================================================
+    // PRODUCTS COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: Read only (browse products)
+    /// - Admins: Read and write (manage catalog)
+    /// - Cloud Functions: Read only (for order validation)
+    ///
+    /// Data Safety: No customer can modify, delete, or hide products
+    ///
+    match /products/{productId} {
+      // ─── READ ──────────────────────────────────────────────
+      /// Anyone can read products (public catalog)
       allow read: if true;
+
+      // ─── WRITE ─────────────────────────────────────────────
+      /// Only admin can create products
+      allow create: if isAdmin() && isValidProduct(request.resource.data);
+      /// Only admin can update products
+      allow update: if isAdmin();
+      /// Only admin can delete products
+      allow delete: if isAdmin();
     }
 
-    // ========== DENY ALL OTHER ACCESS ==========
+    // ========================================================================
+    // CATEGORIES COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: Read only
+    /// - Admins: Read and write
+    ///
+    match /categories/{categoryId} {
+      /// Public read (all products organized by category)
+      allow read: if true;
+      /// Only admin can write
+      allow write: if isAdmin();
+    }
+
+    // ========================================================================
+    // PRICING_TIERS COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: Read only (view pricing tiers)
+    /// - Admins: Read and write (manage tier rules)
+    ///
+    /// Used For: Dynamic pricing based on order quantity or customer tier
+    ///
+    match /pricing_tiers/{tierId} {
+      /// Public read (pricing info)
+      allow read: if true;
+      /// Only admin can manage tiers
+      allow write: if isAdmin();
+    }
+
+    // ========================================================================
+    // INVENTORY COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: Read only (stock info for products)
+    /// - Admins: Read and write (manage inventory)
+    /// - Cloud Functions: Read and write (stock updates on order)
+    ///
+    match /inventory/{inventoryId} {
+      /// Customers can read inventory to see stock status
+      allow read: if true;
+      /// Admin can manage inventory
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+      /// Cloud Functions update inventory on order (stock reservation)
+      allow write: if isCloudFunction();
+    }
+
+    // ========================================================================
+    // STOCK_LOCKS COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: No access (backend only)
+    /// - Cloud Functions: Full access (atomically reserve stock)
+    ///
+    /// Purpose: Prevent race conditions in inventory (Feature 6)
+    ///
+    match /stock_locks/{lockId} {
+      /// Only Cloud Functions can manage stock locks
+      allow read: if isCloudFunction();
+      allow write: if isCloudFunction();
+      /// Customers cannot access
+      allow read, write: if false;
+    }
+
+    // ========================================================================
+    // PAYMENTS COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: Create own, read own, limited update
+    /// - Admins: Read all, update (verify/reject)
+    /// - Cloud Functions: Update for verification
+    ///
+    /// Data Safety: Customers cannot view other orders' payments
+    ///
+    match /payments/{paymentId} {
+      // ─── READ ──────────────────────────────────────────────
+      /// Customers read own payment records
+      allow read: if resource.data.customerId == getUserPhone();
+      /// Admins can read all payments (audit trail)
+      allow read: if isAdmin();
+      /// Cloud Functions can read
+      allow read: if isCloudFunction();
+
+      // ─── CREATE ────────────────────────────────────────────
+      /// Customers create payment records (checkout)
+      allow create: if isAuthenticated() &&
+                       request.resource.data.customerId == getUserPhone() &&
+                       isValidPayment(request.resource.data);
+
+      // ─── UPDATE ────────────────────────────────────────────
+      /// Only admin and Cloud Functions can update payment status
+      /// (verify, reject, mark as processed)
+      allow update: if isAdmin() || isCloudFunction();
+
+      // ─── DELETE ────────────────────────────────────────────
+      /// No deletion (audit trail)
+      allow delete: if false;
+
+      // ─── PAYMENT_ATTEMPTS SUBCOLLECTION ──────────────────
+      match /attempts/{attemptId} {
+        /// Cloud Functions log payment attempts
+        allow write: if isCloudFunction();
+        /// Customers can view own
+        allow read: if resource.data.customerId == getUserPhone();
+        allow read: if isAdmin();
+      }
+    }
+
+    // ========================================================================
+    // PICKUP_SLOTS COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: Read only (select pickup slot during checkout)
+    /// - Admins: Read and write (manage slots)
+    /// - Cloud Functions: Update (mark as booked/available)
+    ///
+    match /pickup_slots/{slotId} {
+      /// Customers can read available slots
+      allow read: if true;
+      /// Admin manages slots
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+      /// Cloud Functions update slot availability
+      allow update: if isCloudFunction();
+    }
+
+    // ========================================================================
+    // BANNERS COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: Read only (view promotional banners)
+    /// - Admins: Read and write (manage banners)
+    ///
+    match /banners/{bannerId} {
+      /// Public read (home screen banners)
+      allow read: if true;
+      /// Only admin can manage banners
+      allow write: if isAdmin();
+    }
+
+    // ========================================================================
+    // APP_SETTINGS COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: Read only (app configuration)
+    /// - Admins: Read and write (adjust settings)
+    /// - Cloud Functions: Write (update settings programmatically)
+    ///
+    /// Contains: Feature flags, app version, maintenance mode, etc.
+    ///
+    match /app_settings/{document=**} {
+      /// Customers can read app settings (feature availability)
+      allow read: if isAuthenticated();
+      /// Admin manages settings
+      allow write: if isAdmin();
+      /// Cloud Functions can write settings (feature toggles)
+      allow write: if isCloudFunction();
+    }
+
+    // ========================================================================
+    // WHATSAPP_LOGS COLLECTION
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: No access (backend only)
+    /// - Admins: Read all logs (audit trail)
+    /// - Cloud Functions: Write logs
+    ///
+    /// Purpose: Track WhatsApp notifications sent (delivery confirmation)
+    ///
+    match /whatsapp_logs/{logId} {
+      /// Cloud Functions create logs
+      allow write: if isCloudFunction();
+      /// Admin can audit logs
+      allow read: if isAdmin();
+      /// Customers cannot access
+      allow read: if false;
+    }
+
+    // ========================================================================
+    // ANALYTICS COLLECTION (if exists)
+    // ========================================================================
+    ///
+    /// Access Control:
+    /// - Customers: No access
+    /// - Admins: Read analytics
+    /// - Cloud Functions: Write metrics
+    ///
+    match /analytics/{document=**} {
+      /// Cloud Functions log metrics
+      allow write: if isCloudFunction();
+      /// Admin views analytics
+      allow read: if isAdmin();
+      /// Customers cannot access
+      allow read, write: if false;
+    }
+
+    // ========================================================================
+    // CATCH-ALL: DENY ALL OTHER ACCESS (FAIL-SAFE)
+    // ========================================================================
+    ///
+    /// Default deny: Any collection not explicitly allowed above will be blocked
+    /// This prevents accidental security holes from new collections
+    ///
     match /{document=**} {
       allow read, write: if false;
     }

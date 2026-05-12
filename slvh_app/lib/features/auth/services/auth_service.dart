@@ -2,16 +2,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/auth/services/otp_resend_service.dart';
+import 'package:slvh_app/features/auth/services/session_manager_service.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
 
 /// Real Firebase Authentication Service
 ///
 /// Customer login  → Firebase Phone Auth (SMS OTP)
 /// Admin login     → Firebase Email/Password Auth
+///
+/// Includes:
+/// - Session management with token refresh (Feature 8)
+/// - OTP resend with rate limiting (Feature 7)
+/// - Firebase auth state tracking
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final OTPResendService _otpResendService = OTPResendService();
+  SessionManagerService? _sessionManager;
 
   // ─── Storage keys ────────────────────────────────────────────
   static const String _isLoggedInKey   = 'user_logged_in';
@@ -257,6 +264,74 @@ class AuthService {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Initialize session manager for token refresh and auth state listening
+  /// 
+  /// Should be called once at app startup (in app root)
+  void initializeSessionManager(SessionManagerService sessionManager,
+      {VoidCallback? onSessionExpired, VoidCallback? onSessionValid}) {
+    _sessionManager = sessionManager;
+    _sessionManager?.initialize(
+      onSessionExpired: onSessionExpired,
+      onSessionValid: onSessionValid,
+    );
+    print('🔐 AuthService: Session manager initialized');
+  }
+
+  /// Get a fresh Firebase ID token before Firestore operations
+  ///
+  /// Feature 8: Token Refresh / Session Expiry
+  /// 
+  /// Firebase ID tokens expire after 1 hour. This method ensures
+  /// the token is refreshed before critical Firestore operations.
+  ///
+  /// Usage:
+  /// ```dart
+  /// try {
+  ///   final token = await authService.getRefreshedToken();
+  ///   // Token is now fresh, safe for Firestore operations
+  ///   await _db.collection('orders').doc(orderId).set(...);
+  /// } on FirebaseAuthException {
+  ///   // Token refresh failed, user likely logged out
+  ///   navigateToLogin();
+  /// }
+  /// ```
+  ///
+  /// Returns: Fresh ID token string
+  /// Throws: FirebaseAuthException if token refresh fails or user is logged out
+  Future<String> getRefreshedToken() async {
+    if (_sessionManager == null) {
+      throw Exception('SessionManager not initialized. Call initializeSessionManager() first.');
+    }
+
+    final token = await _sessionManager!.getValidToken();
+    if (token == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-authenticated',
+        message: 'User is not authenticated. Please log in again.',
+      );
+    }
+
+    return token;
+  }
+
+  /// Check if current session is valid
+  ///
+  /// Returns: true if user is authenticated and token is fresh
+  Future<bool> isSessionValid() async {
+    if (_sessionManager == null) return false;
+    return _sessionManager!.isSessionValid();
+  }
+
+  /// Get current auth state stream
+  ///
+  /// Useful for listening to auth changes throughout the app
+  Stream<AuthState> get authStateStream {
+    if (_sessionManager == null) {
+      throw Exception('SessionManager not initialized');
+    }
+    return _sessionManager!.authStateStream;
   }
 
   Future<void> signOut() async {
