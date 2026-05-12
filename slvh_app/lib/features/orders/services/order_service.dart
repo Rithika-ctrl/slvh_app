@@ -1,40 +1,53 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:slvh_app/features/inventory/services/stock_service.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
 
 /// Service for managing orders (Firestore operations)
-/// Uses batch writes for atomic operations (create order + reduce stock)
+/// Uses Firestore Transactions to atomically reserve stock
+/// Prevents overselling when multiple customers order simultaneously
 class OrderService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final StockService _stockService = StockService();
 
-  /// Create order with automatic stock reduction (atomic batch write)
-  /// Returns the order ID if successful
-  /// Throws exception if stock insufficient or other error
+  /// Create order with atomic stock reservation using Firestore Transaction
+  /// 
+  /// CRITICAL: Uses Firestore Transaction (not batch write) to:
+  /// 1. Read all product stock levels
+  /// 2. Validate sufficient stock for all items
+  /// 3. Atomically decrement stock if valid
+  /// 4. Create order only after stock is reserved
+  /// 
+  /// This prevents overselling when two customers order the last item simultaneously.
+  /// Both customers can't complete orders - first wins, second gets StockReservationException.
+  /// 
+  /// Returns: Order ID if successful
+  /// Throws: StockReservationException if stock insufficient
   Future<String> createOrder({
     required OrderModel order,
   }) async {
     try {
-      // Create batch write
-      final batch = _firestore.batch();
+      print('📦 Creating order with ${order.items.length} items...');
 
-      // 1. Create order document
+      // STEP 1: Reserve stock atomically using Firestore Transaction
+      // This validates stock and decrements it in one atomic operation
+      final newStockLevels = await _stockService.reserveStock(order.items);
+      print('✅ Stock reserved atomically: $newStockLevels');
+
+      // STEP 2: Create order document (stock is already reserved)
       final orderRef = _firestore.collection('orders').doc();
-      batch.set(orderRef, order.copyWith(id: orderRef.id).toFirestore());
+      final orderId = orderRef.id;
 
-      // 2. Reduce stock for each item
-      for (final item in order.items) {
-        final productRef =
-            _firestore.collection('products').doc(item.productId);
-        batch.update(productRef, {
-          'stock': FieldValue.increment(-item.quantity),
-        });
-      }
+      await orderRef.set(order.copyWith(id: orderId).toFirestore());
 
-      // 3. Commit batch atomically
-      await batch.commit();
-
-      return orderRef.id;
+      print('✅ Order created: $orderId');
+      return orderId;
+    } on StockReservationException {
+      // Re-throw stock errors to be handled by UI
+      print('❌ Order creation failed: insufficient stock');
+      rethrow;
     } catch (e) {
+      print('❌ Order creation failed: $e');
       throw Exception('Failed to create order: $e');
     }
   }

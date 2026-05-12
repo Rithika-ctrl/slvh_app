@@ -2,15 +2,18 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slvh_app/features/cart/models/cart_item_model.dart';
+import 'package:slvh_app/features/cart/services/cart_service.dart';
 import 'package:slvh_app/features/products/models/pricing_tier_model.dart';
 import 'package:slvh_app/features/products/models/product_model.dart';
 import 'package:slvh_app/features/products/services/pricing_service.dart';
 
 /// Provider for managing shopping cart state
-/// Handles add, remove, update operations and local persistence
+/// Handles add, remove, update operations
+/// Persists to both SharedPreferences (local) and Firestore (cloud)
 class CartProvider extends ChangeNotifier {
   final List<CartItemModel> _items = [];
   final PricingService _pricingService = PricingService();
+  final CartService _cartService = CartService();
   SharedPreferences? _prefs;
 
   CartProvider() {
@@ -18,9 +21,27 @@ class CartProvider extends ChangeNotifier {
   }
 
   /// Initialize and load cart from local storage
+  /// Firestore loading should be done via loadFromFirestore() after auth
   Future<void> _init() async {
     _prefs = await SharedPreferences.getInstance();
     await _loadCart();
+  }
+
+  /// Load cart from Firestore (call after user authenticates)
+  /// Merges with existing local cart (Firestore takes precedence)
+  Future<void> loadFromFirestore() async {
+    try {
+      final firestoreItems = await _cartService.loadCart();
+      if (firestoreItems.isNotEmpty) {
+        _items.clear();
+        _items.addAll(firestoreItems);
+        notifyListeners();
+        print('✅ Cart loaded from Firestore');
+      }
+    } catch (e) {
+      print('⚠️ Failed to load cart from Firestore: $e');
+      // Continue with local cart
+    }
   }
 
   /// Get all cart items
@@ -141,10 +162,11 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Clear entire cart
+  /// Clear entire cart (local and Firestore)
   Future<void> clearCart() async {
     _items.clear();
-    await _saveCart();
+    await _saveCart(); // This saves empty list to both local and Firestore
+    await _cartService.clearCart(); // Also explicitly delete Firestore document
     notifyListeners();
   }
 
@@ -180,9 +202,10 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  /// Save cart to local storage
+  /// Save cart to local storage AND Firestore
   Future<void> _saveCart() async {
     try {
+      // Save to SharedPreferences (local)
       if (_prefs == null) {
         _prefs = await SharedPreferences.getInstance();
       }
@@ -191,6 +214,9 @@ class CartProvider extends ChangeNotifier {
         _items.map((item) => item.toJson()).toList(),
       );
       await _prefs?.setString('cart', cartJson);
+
+      // Save to Firestore (cloud)
+      await _cartService.saveCart(_items);
     } catch (e) {
       print('Error saving cart: $e');
     }

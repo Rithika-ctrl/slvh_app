@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:slvh_app/features/cart/providers/cart_provider.dart';
+import 'package:slvh_app/features/inventory/dialogs/stock_error_dialog.dart';
+import 'package:slvh_app/features/inventory/services/stock_service.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 import 'package:slvh_app/features/orders/services/order_service.dart';
 import 'package:slvh_app/features/payments/screens/payment_screen.dart';
@@ -140,8 +142,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             }
           }
         });
-      }
-    } catch (e) {
+      }    } on StockReservationException catch (e) {
+      setState(() => _isCreatingOrder = false);
+      
+      if (mounted) {
+        // Show detailed stock error dialog
+        await StockErrorDialog.show(context, e);
+      }    } catch (e) {
       setState(() {
         _errorMessage = 'Failed to create order: $e';
         _isCreatingOrder = false;

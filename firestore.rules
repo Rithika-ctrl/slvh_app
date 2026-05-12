@@ -22,7 +22,7 @@ service cloud.firestore {
       return request.auth.uid == null && request.auth.token.iss == 'https://securetoken.google.com/slvh-b707f';
     }
 
-    // ========== USERS COLLECTION ==========
+    // ========== USERS COLLECTION (by phone) ==========
     match /users/{phoneNumber} {
       // User can read their own document
       allow read: if isPhoneOwner(phoneNumber) || isAdmin() || isCloudFunction();
@@ -39,6 +39,33 @@ service cloud.firestore {
         allow read: if isPhoneOwner(phoneNumber);
         
         // Cloud Functions can write notifications
+        allow write: if isCloudFunction();
+      }
+
+      // Cart subcollection
+      match /cart/{document=**} {
+        // User can read their own cart
+        allow read: if isPhoneOwner(phoneNumber);
+        
+        // User can write their own cart (add, update, delete items)
+        allow write: if isPhoneOwner(phoneNumber);
+        
+        // Cloud Functions can manage cart
+        allow write: if isCloudFunction();
+      }
+    }
+
+    // ========== USERS COLLECTION (by UID for cart persistence) ==========
+    match /users_by_uid/{uid} {
+      // User can read and write their own cart data
+      allow read, write: if request.auth.uid == uid;
+      
+      // Cart subcollection
+      match /cart/{document=**} {
+        // User can read and write their own cart
+        allow read, write: if request.auth.uid == uid;
+        
+        // Cloud Functions can manage cart
         allow write: if isCloudFunction();
       }
     }
