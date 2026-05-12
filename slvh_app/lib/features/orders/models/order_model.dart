@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Order status enum
 enum OrderStatus {
   pendingPayment('Pending Payment'),
+  paymentRetryPending('Payment Retry Pending'),
   paymentVerificationPending('Payment Verification Pending'),
   confirmed('Confirmed'),
   preparing('Preparing'),
@@ -24,6 +25,7 @@ enum OrderStatus {
       case OrderStatus.preparing:
         return '2196F3'; // Blue
       case OrderStatus.pendingPayment:
+      case OrderStatus.paymentRetryPending:
       case OrderStatus.paymentVerificationPending:
         return 'FF9800'; // Orange
       case OrderStatus.cancelled:
@@ -98,12 +100,15 @@ class OrderModel {
   final OrderStatus status;
   final String? paymentId; // Reference to payment document
   final String? paymentStatus; // Payment status (Pending, Verification Pending, Verified, Rejected)
+  final String? paymentReference; // Transaction ID or reference for retry
+  final int retryCount; // Number of payment/upload retry attempts
   final String pickupDate; // YYYY-MM-DD format
   final String pickupTime; // HH:MM format
   final String pickupSlotId; // Reference to slot
 
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final DateTime? lastRetryAt; // Timestamp of last retry attempt
   final DateTime? completedAt; // When order was completed
 
   OrderModel({
@@ -116,11 +121,14 @@ class OrderModel {
     this.status = OrderStatus.pendingPayment,
     this.paymentId,
     this.paymentStatus,
+    this.paymentReference,
+    this.retryCount = 0,
     required this.pickupDate,
     required this.pickupTime,
     required this.pickupSlotId,
     required this.createdAt,
     this.updatedAt,
+    this.lastRetryAt,
     this.completedAt,
   });
 
@@ -152,11 +160,14 @@ class OrderModel {
       'status': status.name,
       'paymentId': paymentId,
       'paymentStatus': paymentStatus,
+      'paymentReference': paymentReference,
+      'retryCount': retryCount,
       'pickupDate': pickupDate,
       'pickupTime': pickupTime,
       'pickupSlotId': pickupSlotId,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'lastRetryAt': lastRetryAt,
       'completedAt': completedAt,
     };
   }
@@ -179,11 +190,14 @@ class OrderModel {
       status: OrderStatus.fromString(data['status'] ?? 'pendingPayment'),
       paymentId: data['paymentId'],
       paymentStatus: data['paymentStatus'],
+      paymentReference: data['paymentReference'],
+      retryCount: (data['retryCount'] as num?)?.toInt() ?? 0,
       pickupDate: data['pickupDate'] ?? '',
       pickupTime: data['pickupTime'] ?? '',
       pickupSlotId: data['pickupSlotId'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+      lastRetryAt: (data['lastRetryAt'] as Timestamp?)?.toDate(),
       completedAt: (data['completedAt'] as Timestamp?)?.toDate(),
     );
   }
@@ -199,11 +213,14 @@ class OrderModel {
     OrderStatus? status,
     String? paymentId,
     String? paymentStatus,
+    String? paymentReference,
+    int? retryCount,
     String? pickupDate,
     String? pickupTime,
     String? pickupSlotId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastRetryAt,
     DateTime? completedAt,
   }) {
     return OrderModel(
@@ -216,11 +233,14 @@ class OrderModel {
       status: status ?? this.status,
       paymentId: paymentId ?? this.paymentId,
       paymentStatus: paymentStatus ?? this.paymentStatus,
+      paymentReference: paymentReference ?? this.paymentReference,
+      retryCount: retryCount ?? this.retryCount,
       pickupDate: pickupDate ?? this.pickupDate,
       pickupTime: pickupTime ?? this.pickupTime,
       pickupSlotId: pickupSlotId ?? this.pickupSlotId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lastRetryAt: lastRetryAt ?? this.lastRetryAt,
       completedAt: completedAt ?? this.completedAt,
     );
   }

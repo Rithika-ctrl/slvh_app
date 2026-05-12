@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:slvh_app/features/payments/models/payment_model.dart';
 import 'package:slvh_app/features/pickup_slots/models/slot_model.dart';
+import 'package:slvh_app/features/orders/models/order_model.dart';
 
 /// Service for managing payment operations (Firestore + Firebase Storage)
 class PaymentService {
@@ -318,6 +319,40 @@ class PaymentService {
       return total;
     } catch (e) {
       throw Exception('Failed to calculate total payments: $e');
+    }
+  }
+
+  /// Handle payment upload failure - save draft order for retry
+  /// Called when screenshot upload fails
+  /// Payment was taken, but order creation must be retried
+  Future<String> handlePaymentUploadFailure({
+    required String orderId,
+    required String paymentId,
+    required String paymentReference,
+  }) async {
+    try {
+      // Mark payment as failed upload attempt (but payment itself succeeded)
+      await _firestore.collection('payments').doc(paymentId).update({
+        'status': PaymentStatus.pending.name,
+        'updatedAt': DateTime.now(),
+      });
+
+      return paymentReference;
+    } catch (e) {
+      throw Exception('Failed to mark payment for retry: $e');
+    }
+  }
+
+  /// Update order status from payment retry pending to verification pending
+  /// Called when payment screenshot is successfully uploaded after retry
+  Future<void> updateOrderFromRetryToVerification(String orderId) async {
+    try {
+      await _firestore.collection('orders').doc(orderId).update({
+        'status': OrderStatus.paymentVerificationPending.name,
+        'updatedAt': DateTime.now(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update order after retry: $e');
     }
   }
 }

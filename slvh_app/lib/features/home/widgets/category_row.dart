@@ -59,8 +59,8 @@ class _CategoryRowState extends State<CategoryRow> {
               width: 72,
               decoration: BoxDecoration(
                 color: selected
-                    ? color.withValues(alpha: 0.15)
-                    : Colors.white.withValues(alpha: 0.9),
+                    ? color.withOpacity(0.15)
+                    : Colors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: selected ? color : AppColors.cardBorder,
@@ -68,7 +68,7 @@ class _CategoryRowState extends State<CategoryRow> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withValues(alpha: selected ? 0.18 : 0.06),
+                    color: color.withOpacity(selected ? 0.18 : 0.06),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -127,7 +127,7 @@ class _FallbackIcon extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Center(

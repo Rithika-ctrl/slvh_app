@@ -347,12 +347,12 @@ class _MenuCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: Colors.white.withOpacity(0.92),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0x22DCA03C), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFB47820).withValues(alpha: 0.07),
+            color: const Color(0xFFB47820).withOpacity(0.07),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -389,7 +389,7 @@ class _Tile extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: iconColor.withValues(alpha: 0.12),
+          color: iconColor.withOpacity(0.12),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: iconColor, size: 18),

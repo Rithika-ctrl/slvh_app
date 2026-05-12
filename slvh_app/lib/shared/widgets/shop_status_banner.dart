@@ -39,7 +39,7 @@ class ShopStatusBanner extends StatelessWidget {
         } else if (settings.orderPause) {
           message = '⏸ Orders paused temporarily';
           icon = Icons.pause_circle_outline_rounded;
-          bg = AppColors.warning.withValues(alpha: 1);
+          bg = AppColors.warning.withOpacity(1);
         } else {
           final open = _fmt(settings.openTime);
           final close = _fmt(settings.closeTime);

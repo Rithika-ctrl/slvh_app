@@ -104,12 +104,12 @@ class _ProductCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
+          color: Colors.white.withOpacity(0.92),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: AppColors.cardBorder, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFB47820).withValues(alpha: 0.09),
+              color: const Color(0xFFB47820).withOpacity(0.09),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -175,7 +175,7 @@ class _ProductCard extends StatelessWidget {
                         borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(20)),
                         child: Container(
-                          color: Colors.black.withValues(alpha: 0.4),
+                          color: Colors.black.withOpacity(0.4),
                           child: const Center(
                             child: Text(
                               'OUT OF\nSTOCK',

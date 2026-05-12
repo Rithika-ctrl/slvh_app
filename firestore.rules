@@ -54,8 +54,12 @@ service cloud.firestore {
       // Cloud Functions can read orders
       allow read: if isCloudFunction();
       
-      // Users can create orders
+      // Users can create orders (including draft orders for retry)
       allow create: if request.auth.token.phone_number != null;
+      
+      // Users can update their own draft orders (payment_retry_pending status)
+      allow update: if resource.data.customerId == request.auth.token.phone_number &&
+                       resource.data.status == 'paymentRetryPending';
       
       // Admin can update order status
       allow update: if isAdmin() || isCloudFunction();

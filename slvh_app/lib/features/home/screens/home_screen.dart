@@ -214,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.orange.withValues(alpha: 0.35),
+                  color: AppColors.orange.withOpacity(0.35),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),
@@ -299,13 +299,13 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.9),
+          color: Colors.white.withOpacity(0.9),
           borderRadius: BorderRadius.circular(18),
           border:
               Border.all(color: const Color(0x2FDCA03C), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFB47820).withValues(alpha: 0.09),
+              color: const Color(0xFFB47820).withOpacity(0.09),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -450,14 +450,14 @@ class _HomeScreenState extends State<HomeScreen> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.88),
+              color: Colors.white.withOpacity(0.88),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                   color: const Color(0x25DCA03C), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color:
-                      const Color(0xFFB47820).withValues(alpha: 0.09),
+                      const Color(0xFFB47820).withOpacity(0.09),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),
@@ -533,7 +533,7 @@ class _IconPill extends StatelessWidget {
               borderRadius: BorderRadius.circular(13),
               boxShadow: [
                 BoxShadow(
-                  color: gradient.last.withValues(alpha: 0.3),
+                  color: gradient.last.withOpacity(0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 3),
                 ),

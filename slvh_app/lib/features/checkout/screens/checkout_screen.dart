@@ -116,14 +116,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               amount: order.total,
               customerPhone: currentUser.phoneNumber ?? '',
               cartSummary: widget.cartSummary,
+              orderModel: order.copyWith(id: orderId),
             ),
           ),
         ).then((paymentResult) {
           // After payment screen closes
           if (paymentResult != null && mounted) {
-            // Payment screenshot was uploaded
-            // Navigate to order summary
-            context.push('/order-summary', extra: order.copyWith(id: orderId));
+            if (paymentResult['status'] == 'Payment Verification Pending') {
+              // Payment screenshot was uploaded successfully
+              // Navigate to order summary
+              context.push('/order-summary', extra: order.copyWith(id: orderId));
+            } else if (paymentResult['status'] == 'Payment Retry Pending') {
+              // Payment succeeded but upload failed - order saved for retry
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(paymentResult['message'] ?? 
+                      'Your order is saved. Retry anytime.'),
+                  backgroundColor: Colors.blue,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+              context.pop();
+            }
           }
         });
       }

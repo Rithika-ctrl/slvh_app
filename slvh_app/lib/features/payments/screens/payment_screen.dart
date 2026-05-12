@@ -2,9 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:slvh_app/features/payments/models/payment_model.dart';
 import 'package:slvh_app/features/payments/services/payment_service.dart';
+import 'package:slvh_app/features/payments/services/payment_retry_service.dart';
 import 'package:slvh_app/features/payments/widgets/qr_widget.dart';
 import 'package:slvh_app/features/payments/widgets/upload_screenshot_widget.dart';
+import 'package:slvh_app/features/payments/widgets/payment_retry_bottom_sheet.dart';
 import 'package:slvh_app/features/pickup_slots/models/slot_model.dart';
+import 'package:slvh_app/features/orders/models/order_model.dart';
+import 'package:slvh_app/features/orders/services/order_service.dart';
 
 /// Payment screen for displaying UPI QR code and handling screenshot upload
 class PaymentScreen extends StatefulWidget {
@@ -12,6 +16,7 @@ class PaymentScreen extends StatefulWidget {
   final double amount;
   final String customerPhone;
   final Map<String, dynamic>? cartSummary; // Optional cart summary
+  final OrderModel? orderModel; // Optional order object for retry handling
 
   const PaymentScreen({
     Key? key,
@@ -19,6 +24,7 @@ class PaymentScreen extends StatefulWidget {
     required this.amount,
     required this.customerPhone,
     this.cartSummary,
+    this.orderModel,
   }) : super(key: key);
 
   @override
@@ -27,9 +33,12 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   final PaymentService _paymentService = PaymentService();
+  final PaymentRetryService _retryService = PaymentRetryService();
+  final OrderService _orderService = OrderService();
 
   late ShopSettingsModel _settings;
   late PaymentModel _payment;
+  OrderModel? _orderModel;
 
   String? _selectedImagePath;
   bool _isLoading = true;
@@ -53,6 +62,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       if (_settings.upiId == null || _settings.upiId!.isEmpty) {
         throw Exception('Shop UPI ID not configured');
+      }
+
+      // Fetch order if not passed as parameter
+      if (widget.orderModel != null) {
+        _orderModel = widget.orderModel;
+      } else {
+        _orderModel = await _orderService.getOrder(widget.orderId);
       }
 
       // Create payment record
@@ -150,17 +166,83 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } catch (e) {
       setState(() {
         _isUploading = false;
-        _errorMessage = 'Upload failed: $e';
       });
 
+      // Payment was made, but upload failed
+      // Save draft order and show retry UI
+      if (mounted && _orderModel != null) {
+        await _handleUploadFailure(e);
+      } else {
+        setState(() {
+          _errorMessage = 'Upload failed: $e';
+        });
+      }
+    }
+  }
+
+  /// Handle upload failure - save draft order and show retry UI
+  Future<void> _handleUploadFailure(dynamic error) async {
+    try {
+      // Save draft order with payment_retry_pending status
+      await _retryService.saveDraftOrder(
+        order: _orderModel!,
+        paymentReference: _payment.id,
+      );
+
+      // Mark payment as pending (not verified yet)
+      await _paymentService.handlePaymentUploadFailure(
+        orderId: widget.orderId,
+        paymentId: _payment.id,
+        paymentReference: _payment.id,
+      );
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Upload failed: $e'),
-            backgroundColor: Colors.red,
+        // Show retry bottom sheet
+        final result = await showModalBottomSheet(
+          context: context,
+          isDismissible: false,
+          builder: (context) => PaymentRetryBottomSheet(
+            order: _orderModel!,
+            paymentReference: _payment.id,
+            onRetry: _handleUploadScreenshot,
+            onContactSupport: () {
+              // TODO: Implement contact support (email, whatsapp, etc)
+            },
           ),
         );
+
+        if (result != null) {
+          if (result['retried'] == true) {
+            // User tapped retry and it succeeded
+            setState(() {
+              _successMessage =
+                  '✅ Payment proof submitted successfully!';
+            });
+          } else if (result['continueLater'] == true) {
+            // User chose to continue later
+            if (mounted && Navigator.canPop(context)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    '✅ Your order is saved. You can retry anytime.',
+                  ),
+                  backgroundColor: Colors.blue,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              Navigator.pop(context, {
+                'paymentId': _payment.id,
+                'status': 'Payment Retry Pending',
+                'message': 'Order saved for later',
+              });
+            }
+          }
+        }
       }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to save draft order: $e';
+      });
     }
   }
 
