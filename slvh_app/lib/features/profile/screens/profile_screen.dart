@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../auth/services/auth_service.dart';
 import '../../orders/screens/order_history_screen.dart';
+import '../../legal/screens/legal_screen.dart';          // ← NEW
 import '../widgets/profile_header.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -173,6 +174,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) context.go('/');
   }
 
+  // ── Open legal doc ────────────────────────────────────────────────────────
+
+  void _openLegal(LegalDocType docType) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LegalScreen(docType: docType),
+      ),
+    );
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -271,6 +282,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               iconColor: AppColors.catPink,
                               label: 'Notifications',
                               onTap: () => context.push('/notifications'),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // ── NEW: Legal card ──────────────────────────────
+                        _MenuCard(
+                          children: [
+                            _Tile(
+                              icon: Icons.privacy_tip_outlined,
+                              iconColor: AppColors.catCyan,
+                              label: 'Privacy Policy',
+                              onTap: () => _openLegal(LegalDocType.privacyPolicy),
+                            ),
+                            _divider(),
+                            _Tile(
+                              icon: Icons.gavel_rounded,
+                              iconColor: AppColors.catPurple,
+                              label: 'Terms of Service',
+                              onTap: () => _openLegal(LegalDocType.termsOfService),
                             ),
                           ],
                         ),
