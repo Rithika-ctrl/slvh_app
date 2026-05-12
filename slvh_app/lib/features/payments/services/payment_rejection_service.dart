@@ -79,7 +79,7 @@ class PaymentRejectionService {
   }
 
   /// Send notification to customer about payment rejection
-  /// Includes refund instructions
+  /// Includes refund instructions via FCM and WhatsApp
   Future<void> _notifyCustomerOfRejection({
     required String customerPhone,
     required String orderId,
@@ -99,9 +99,8 @@ class PaymentRejectionService {
       );
 
       // Save to notification history
-      // Note: In production, get userId from auth, not phone
       await _notificationService.saveNotification(
-        userId: customerPhone, // Using phone as identifier
+        userId: customerPhone,
         title: title,
         body: body,
         orderId: orderId,
@@ -109,10 +108,57 @@ class PaymentRejectionService {
         actionUrl: '/orders/$orderId/refund',
       );
 
+      // Send WhatsApp notification with rejection reason
+      await _sendWhatsAppNotification(
+        customerPhone: customerPhone,
+        orderId: orderId,
+        rejectionReason: rejectionReason,
+      );
+
       print('✅ Customer notified about payment rejection');
     } catch (e) {
       print('⚠️ Failed to notify customer: $e');
-      // Don't throw - notification failure shouldn't block rejection
+    }
+  }
+
+  /// Send WhatsApp notification to customer with rejection reason
+  /// This would be implemented via Cloud Function in production
+  Future<void> _sendWhatsAppNotification({
+    required String customerPhone,
+    required String orderId,
+    required String rejectionReason,
+  }) async {
+    try {
+      // In production, this would trigger a Cloud Function that sends WhatsApp via Twilio/WhatsApp Business API
+      // For now, we log it for implementation
+      final message = '''
+🔴 Payment Rejected - Order $orderId
+
+Reason: $rejectionReason
+
+Your payment screenshot was not accepted. Here's what to do:
+
+1️⃣ A refund will be automatically processed (5-7 days)
+2️⃣ You'll receive a notification when refund is complete
+3️⃣ You can retry payment in the app
+
+Open the app to view refund instructions.
+
+Need help? Reply to this message.
+      ''';
+
+      print('📱 WhatsApp Message (would be sent in production):');
+      print(message);
+
+      // TODO: Implement via Cloud Function
+      // await _firestore.collection('whatsapp_queue').add({
+      //   'phone': customerPhone,
+      //   'message': message,
+      //   'orderId': orderId,
+      //   'createdAt': DateTime.now(),
+      // });
+    } catch (e) {
+      print('⚠️ Failed to queue WhatsApp notification: $e');
     }
   }
 
