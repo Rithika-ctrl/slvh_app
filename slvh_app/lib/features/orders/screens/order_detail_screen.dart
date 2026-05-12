@@ -447,13 +447,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   /// Show cancel order confirmation dialog
   Future<void> _showCancelOrderDialog(BuildContext context, OrderModel order) async {
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => CancelOrderDialog(order: order),
+    final result = await showCancelOrderDialog(
+      context,
+      order: order,
+      onCancel: () {
+        // Trigger cancellation (fire-and-forget). Detailed reason is returned by the dialog.
+        OrderService().cancelOrder(order.id);
+      },
+      cancellationReasons: [
+        'Ordered by mistake',
+        'Found cheaper elsewhere',
+        'Delivery time too long',
+        'Other',
+      ],
     );
 
-    if (result == true && mounted) {
+    if (result != null && result['cancelled'] == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✅ Order cancelled successfully'),
@@ -461,10 +470,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           duration: Duration(seconds: 3),
         ),
       );
-      // Navigate back to order history
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+      if (mounted) Navigator.of(context).pop();
     }
   }
 

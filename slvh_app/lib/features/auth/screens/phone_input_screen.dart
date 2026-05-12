@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -83,10 +84,20 @@ class _PhoneInputScreenState extends State<PhoneInputScreen>
       onError: (errorMessage) {
         setState(() {
           _isLoading = false;
-          _errorMessage = errorMessage;
+          // Provide helpful error messages
+          if (kIsWeb && errorMessage.contains('recaptcha')) {
+            _errorMessage = 'Please check your internet connection and try again';
+          } else {
+            _errorMessage = errorMessage;
+          }
         });
+        print('❌ OTP Error: $errorMessage');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_errorMessage ?? 'An error occurred')),
+          SnackBar(
+            content: Text(_errorMessage ?? 'An error occurred'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
         );
       },
     );
@@ -316,6 +327,18 @@ class _PhoneInputScreenState extends State<PhoneInputScreen>
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textMuted,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Development mode notice
+            Text(
+              '💡 Development Mode: Enter any 10-digit number',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.orange.withOpacity(0.7),
               ),
             ),
 

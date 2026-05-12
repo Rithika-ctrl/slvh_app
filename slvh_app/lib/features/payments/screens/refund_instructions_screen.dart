@@ -84,7 +84,7 @@ class _RefundInstructionsScreenState extends State<RefundInstructionsScreen> {
       child: Column(
         children: [
           Icon(
-            Icons.close_circle_outline,
+            Icons.cancel,
             size: 64,
             color: Colors.red[600],
           ),

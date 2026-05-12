@@ -24,8 +24,10 @@ class StatusBadge extends StatelessWidget {
       case OrderStatus.preparing:
         return Colors.blue;
       case OrderStatus.pendingPayment:
+      case OrderStatus.paymentRetryPending:
       case OrderStatus.paymentVerificationPending:
         return Colors.orange;
+      case OrderStatus.paymentRejected:
       case OrderStatus.cancelled:
         return Colors.red;
     }
@@ -36,8 +38,12 @@ class StatusBadge extends StatelessWidget {
     switch (status) {
       case OrderStatus.pendingPayment:
         return Icons.payment;
+      case OrderStatus.paymentRetryPending:
+        return Icons.refresh;
       case OrderStatus.paymentVerificationPending:
         return Icons.hourglass_bottom;
+      case OrderStatus.paymentRejected:
+        return Icons.error;
       case OrderStatus.confirmed:
         return Icons.check_circle;
       case OrderStatus.preparing:
@@ -56,8 +62,12 @@ class StatusBadge extends StatelessWidget {
     switch (status) {
       case OrderStatus.pendingPayment:
         return 0.1;
+      case OrderStatus.paymentRetryPending:
+        return 0.15;
       case OrderStatus.paymentVerificationPending:
         return 0.2;
+      case OrderStatus.paymentRejected:
+        return 0.0;
       case OrderStatus.confirmed:
         return 0.4;
       case OrderStatus.preparing:
@@ -217,8 +227,14 @@ class StatusBadge extends StatelessWidget {
       case OrderStatus.pendingPayment:
         description = 'Waiting for payment. Please complete payment to proceed.';
         break;
+      case OrderStatus.paymentRetryPending:
+        description = 'Payment failed. Please retry payment to proceed.';
+        break;
       case OrderStatus.paymentVerificationPending:
         description = 'Payment screenshot submitted. Awaiting admin verification.';
+        break;
+      case OrderStatus.paymentRejected:
+        description = 'Payment was rejected. Please submit payment again or try a different payment method.';
         break;
       case OrderStatus.confirmed:
         description = 'Payment verified. Your order is confirmed and being prepared.';

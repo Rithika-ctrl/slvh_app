@@ -65,7 +65,7 @@ class StockService {
         );
 
         // STEP 2: Validate stock for all items
-        final Map<String, dynamic> updateMap = {};
+        final Map<DocumentReference, Map<String, dynamic>> updateMap = {};
 
         for (int i = 0; i < snapshots.length; i++) {
           final snapshot = snapshots[i];

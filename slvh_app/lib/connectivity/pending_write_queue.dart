@@ -141,13 +141,8 @@ class PendingWriteQueue {
 // ── Default Firestore executor ────────────────────────────────────────────────
 
 Future<void> _defaultExecutor(PendingWrite write) async {
-  // Import lazily to avoid pulling Firestore into unit tests
-  // ignore: avoid_dynamic_calls
-  import('package:cloud_firestore/cloud_firestore.dart').then((_) async {
-    // This pattern is unusual in Dart — see CartService for the real call.
-    // The executor is injected by each service, not run generically here.
-    // See CartService._saveCartOfflineAware() for an example.
-  });
+  // Intentionally left unimplemented to avoid pulling Firestore into unit tests.
+  // Real executors are injected by services (see CartService for examples).
   throw UnimplementedError(
     'Inject an executor via PendingWriteQueue.instance.initialize(executor:). '
     'See CartService for an example.',

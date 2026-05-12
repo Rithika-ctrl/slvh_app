@@ -23,6 +23,8 @@ class AppColors {
   // ── Status ────────────────────────────────────────────────────
   static const Color success      = Color(0xFF00B894);
   static const Color error        = Color(0xFFE17055);
+  // Deprecated alias used across older UI code
+  static const Color danger       = error;
   static const Color warning      = Color(0xFFFDCB6E);
 
   // ── Category colours ──────────────────────────────────────────

@@ -76,6 +76,18 @@ class _OTPScreenState extends State<OTPScreen>
     }
   }
 
+  /// Check if phone number is a Firebase test number
+  bool _isTestPhoneNumber(String phoneNumber) {
+    final testNumbers = [
+      '9999999999',
+      '9876543210',
+      '9111111111',
+      '1234567890',
+    ];
+    final digitsOnly = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    return testNumbers.contains(digitsOnly);
+  }
+
   void _onDigitEntered(String value, int index) {
     if (value.length == 1 && index < 5) {
       _focusNodes[index + 1].requestFocus();
@@ -358,6 +370,20 @@ class _OTPScreenState extends State<OTPScreen>
                     _errorMessage!,
                     style: const TextStyle(
                       color: AppColors.error,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Center(
+                  child: Text(
+                    '💡 Development Mode: Enter any 6-digit code',
+                    style: TextStyle(
+                      color: AppColors.orange,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),

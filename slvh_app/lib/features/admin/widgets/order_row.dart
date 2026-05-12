@@ -232,8 +232,10 @@ class OrderRow extends StatelessWidget {
       case OrderStatus.preparing:
         return AppColors.catBlue;
       case OrderStatus.pendingPayment:
+      case OrderStatus.paymentRetryPending:
       case OrderStatus.paymentVerificationPending:
         return AppColors.orange;
+      case OrderStatus.paymentRejected:
       case OrderStatus.cancelled:
         return AppColors.error;
     }
