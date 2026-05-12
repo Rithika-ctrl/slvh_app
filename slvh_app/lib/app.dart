@@ -5,6 +5,8 @@ import 'routes/app_router.dart';
 import 'features/cart/providers/cart_provider.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/auth/services/session_manager_service.dart';
+import 'connectivity/connectivity_provider.dart';     // ← Feature 11
+import 'shared/widgets/no_internet_overlay.dart';    // ← Feature 11
 
 class SLVHApp extends StatefulWidget {
   const SLVHApp({super.key});
@@ -24,9 +26,9 @@ class _SLVHAppState extends State<SLVHApp> {
   }
 
   /// Initialize session management and auth state listening
-  /// 
+  ///
   /// Feature 8: Firebase Token Refresh / Session Expiry
-  /// 
+  ///
   /// This runs once at app startup to:
   /// 1. Create SessionManagerService (handles token refresh)
   /// 2. Create AuthService (handles auth operations)
@@ -38,18 +40,15 @@ class _SLVHAppState extends State<SLVHApp> {
 
     print('🚀 App: Initializing Firebase session management...');
 
-    // Initialize session manager with callbacks
     _sessionManager.initialize(
       onSessionExpired: () {
         print('🔴 App: Session expired - user logged out');
-        // Optionally show snackbar or redirect to login
       },
       onSessionValid: () {
         print('✅ App: Session is valid');
       },
     );
 
-    // Connect AuthService to SessionManagerService
     _authService.initializeSessionManager(_sessionManager);
 
     print('✅ App: Firebase session initialized');
@@ -65,13 +64,19 @@ class _SLVHAppState extends State<SLVHApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Provide services to the app
+        // Existing providers
         Provider<SessionManagerService>.value(value: _sessionManager),
         Provider<AuthService>.value(value: _authService),
-        
-        // Cart provider
         ChangeNotifierProvider<CartProvider>(
           create: (_) => CartProvider(),
+        ),
+
+        // ── Feature 11: Connectivity provider ───────────────────────────
+        // ConnectivityProvider drives the NoInternetOverlay banner.
+        // All screens that need to know they're offline can:
+        //   context.watch<ConnectivityProvider>().isOnline
+        ChangeNotifierProvider<ConnectivityProvider>(
+          create: (_) => ConnectivityProvider(),
         ),
       ],
       child: MaterialApp.router(
@@ -79,6 +84,13 @@ class _SLVHAppState extends State<SLVHApp> {
         title: 'SLVH Smart Shop',
         theme: AppTheme.lightTheme,
         routerConfig: AppRouter.buildRouter(),
+        // ── Feature 11: Wrap the router output with the overlay ──────────
+        // builder intercepts every screen the router renders and wraps
+        // it in NoInternetOverlay, so ALL screens automatically get the
+        // animated offline banner — no per-screen changes needed.
+        builder: (context, child) => NoInternetOverlay(
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
     );
   }
