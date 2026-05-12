@@ -106,6 +106,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
       await _firestore.collection('products').doc(widget.productId).update({
         'name': data.name,
+        'name_lowercase': data.name.toLowerCase(),
         'description': data.description,
         'price': data.price,
         'discountPrice': data.discountPrice,
@@ -113,6 +114,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         'categoryId': data.categoryId,
         'stock': data.stock,
         'unitType': data.unitType,
+        'unit_label': data.unitLabel,
         'isActive': data.isActive,
         'updatedAt': FieldValue.serverTimestamp(),
       });

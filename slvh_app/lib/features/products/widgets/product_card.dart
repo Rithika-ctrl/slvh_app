@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/product_model.dart';
+import '../utils/unit_type_helper.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../inventory/services/inventory_service.dart';
 
@@ -233,9 +234,14 @@ class _ProductCardState extends State<ProductCard>
 
                           const SizedBox(height: 4),
 
-                          // Unit Type
+                          // Unit Type with Quantity
                           Text(
-                            widget.product.unitType,
+                            widget.product.unitLabel.isNotEmpty
+                                ? UnitType.formatQuantityWithUnit(
+                                    widget.product.stock,
+                                    widget.product.unitLabel,
+                                  )
+                                : widget.product.unitType,
                             style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,

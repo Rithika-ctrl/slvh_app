@@ -16,6 +16,7 @@ class ProductFormData {
   final String categoryId;
   final int stock;
   final String unitType;
+  final String unitLabel;
   final bool isActive;
   final List<String> existingImageUrls;
   final List<ProductImageUpload> newImages;
@@ -28,6 +29,7 @@ class ProductFormData {
     required this.categoryId,
     required this.stock,
     required this.unitType,
+    required this.unitLabel,
     required this.isActive,
     required this.existingImageUrls,
     required this.newImages,
@@ -79,6 +81,7 @@ class _ProductFormState extends State<ProductForm> {
   late final TextEditingController _discountPriceController;
   late final TextEditingController _stockController;
   late final TextEditingController _unitController;
+  late final TextEditingController _unitLabelController;
 
   late bool _isActive;
   String? _categoryId;
@@ -102,6 +105,7 @@ class _ProductFormState extends State<ProductForm> {
     _stockController =
         TextEditingController(text: product?.stock.toString() ?? '');
     _unitController = TextEditingController(text: product?.unitType ?? '');
+    _unitLabelController = TextEditingController(text: product?.unitLabel ?? '');
     _isActive = product?.isActive ?? true;
     _categoryId = product?.categoryId;
     _existingImages = [...?product?.images];
@@ -119,6 +123,7 @@ class _ProductFormState extends State<ProductForm> {
     _discountPriceController.dispose();
     _stockController.dispose();
     _unitController.dispose();
+    _unitLabelController.dispose();
     super.dispose();
   }
 
@@ -196,9 +201,20 @@ class _ProductFormState extends State<ProductForm> {
                   TextFormField(
                     controller: _unitController,
                     decoration: const InputDecoration(
-                      labelText: 'Unit type',
-                      hintText: 'kg, pack, bottle, piece',
+                      labelText: 'Unit type (size)',
+                      hintText: '500ml, 1kg, 250g, pack',
                       prefixIcon: Icon(Icons.straighten),
+                      helperText: 'e.g., 500ml, 1kg',
+                    ),
+                    validator: _required,
+                  ),
+                  TextFormField(
+                    controller: _unitLabelController,
+                    decoration: const InputDecoration(
+                      labelText: 'Unit label',
+                      hintText: 'kg, piece, litre, dozen, packet',
+                      prefixIcon: Icon(Icons.label_outline),
+                      helperText: 'Standardized unit: kg, piece, litre, etc.',
                     ),
                     validator: _required,
                   ),
@@ -472,6 +488,7 @@ class _ProductFormState extends State<ProductForm> {
         categoryId: _categoryId!,
         stock: int.parse(_stockController.text.trim()),
         unitType: _unitController.text.trim(),
+        unitLabel: _unitLabelController.text.trim(),
         isActive: _isActive,
         existingImageUrls: List.unmodifiable(_existingImages),
         newImages: List.unmodifiable(_newImages),

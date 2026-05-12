@@ -13,7 +13,8 @@ class ProductModel {
   final List<String> images;
   final String categoryId;
   final int stock;
-  final String unitType; // e.g., "250ml", "500g", "pack", "bottle"
+  final String unitType; // e.g., "250ml", "500g", "pack", "bottle" (deprecated, use unitLabel)
+  final String unitLabel; // e.g., "kg", "piece", "litre", "dozen", "packet"
   final bool isActive;
   final double? rating;
   final int? reviewCount;
@@ -31,6 +32,7 @@ class ProductModel {
     required this.categoryId,
     required this.stock,
     required this.unitType,
+    required this.unitLabel,
     required this.isActive,
     this.rating,
     this.reviewCount,
@@ -63,6 +65,7 @@ class ProductModel {
       categoryId: data['categoryId'] as String? ?? '',
       stock: data['stock'] as int? ?? 0,
       unitType: data['unitType'] as String? ?? '',
+      unitLabel: data['unit_label'] as String? ?? '',
       isActive: data['isActive'] as bool? ?? true,
       rating: (data['rating'] as num?)?.toDouble(),
       reviewCount: data['reviewCount'] as int?,
@@ -83,6 +86,7 @@ class ProductModel {
       'categoryId': categoryId,
       'stock': stock,
       'unitType': unitType,
+      'unit_label': unitLabel,
       'isActive': isActive,
       'rating': rating,
       'reviewCount': reviewCount,
@@ -103,6 +107,7 @@ class ProductModel {
     String? categoryId,
     int? stock,
     String? unitType,
+    String? unitLabel,
     bool? isActive,
     double? rating,
     int? reviewCount,
@@ -120,6 +125,7 @@ class ProductModel {
       categoryId: categoryId ?? this.categoryId,
       stock: stock ?? this.stock,
       unitType: unitType ?? this.unitType,
+      unitLabel: unitLabel ?? this.unitLabel,
       isActive: isActive ?? this.isActive,
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,

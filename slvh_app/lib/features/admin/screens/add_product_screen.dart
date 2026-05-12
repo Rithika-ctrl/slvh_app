@@ -85,6 +85,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       await productRef.set({
         'name': data.name,
+        'name_lowercase': data.name.toLowerCase(),
         'description': data.description,
         'price': data.price,
         'discountPrice': data.discountPrice,
@@ -92,6 +93,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'categoryId': data.categoryId,
         'stock': data.stock,
         'unitType': data.unitType,
+        'unit_label': data.unitLabel,
         'isActive': data.isActive,
         'rating': null,
         'reviewCount': 0,
