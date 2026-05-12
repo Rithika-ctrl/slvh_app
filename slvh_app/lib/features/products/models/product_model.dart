@@ -6,6 +6,7 @@
 class ProductModel {
   final String id;
   final String name;
+  final String nameLowercase;
   final String description;
   final double price;
   final double? discountPrice;
@@ -22,6 +23,7 @@ class ProductModel {
   ProductModel({
     required this.id,
     required this.name,
+    String? nameLowercase,
     required this.description,
     required this.price,
     this.discountPrice,
@@ -34,7 +36,7 @@ class ProductModel {
     this.reviewCount,
     required this.createdAt,
     required this.updatedAt,
-  });
+  }) : nameLowercase = nameLowercase ?? name.toLowerCase();
 
   /// Get discount percentage if available
   double? get discountPercentage {
@@ -53,6 +55,7 @@ class ProductModel {
     return ProductModel(
       id: docId,
       name: data['name'] as String? ?? '',
+      nameLowercase: data['name_lowercase'] as String? ?? (data['name'] as String? ?? '').toLowerCase(),
       description: data['description'] as String? ?? '',
       price: (data['price'] as num?)?.toDouble() ?? 0.0,
       discountPrice: (data['discountPrice'] as num?)?.toDouble(),
@@ -72,6 +75,7 @@ class ProductModel {
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
+      'name_lowercase': nameLowercase,
       'description': description,
       'price': price,
       'discountPrice': discountPrice,
@@ -91,6 +95,7 @@ class ProductModel {
   ProductModel copyWith({
     String? id,
     String? name,
+    String? nameLowercase,
     String? description,
     double? price,
     double? discountPrice,
@@ -107,6 +112,7 @@ class ProductModel {
     return ProductModel(
       id: id ?? this.id,
       name: name ?? this.name,
+      nameLowercase: nameLowercase ?? this.nameLowercase,
       description: description ?? this.description,
       price: price ?? this.price,
       discountPrice: discountPrice ?? this.discountPrice,

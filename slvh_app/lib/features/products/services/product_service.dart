@@ -96,7 +96,67 @@ class ProductService {
     });
   }
 
-  /// Search products by name or description
+  /// Search products by name (case-insensitive, prefix matching)
+  /// Uses name_lowercase field for efficient Firestore querying
+  /// Requires Firestore index on name_lowercase ASC
+  Stream<List<ProductModel>> searchProductsOptimized(String query) {
+    if (query.isEmpty) {
+      return watchAllProducts();
+    }
+
+    final queryLower = query.toLowerCase();
+    final nextChar = String.fromCharCode(queryLower.codeUnitAt(queryLower.length - 1) + 1);
+    final endValue = queryLower.substring(0, queryLower.length - 1) + nextChar;
+
+    return _firestore
+        .collection(_collectionPath)
+        .where('isActive', isEqualTo: true)
+        .where('name_lowercase', isGreaterThanOrEqualTo: queryLower)
+        .where('name_lowercase', isLessThan: endValue)
+        .orderBy('name_lowercase')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
+          .toList();
+    }).handleError((error) {
+      print('Error searching products: $error');
+      return <ProductModel>[];
+    });
+  }
+
+  /// Search products by category with optimized name search
+  Stream<List<ProductModel>> searchProductsByCategoryOptimized({
+    required String categoryId,
+    required String searchQuery,
+  }) {
+    if (searchQuery.isEmpty) {
+      return watchProductsByCategory(categoryId);
+    }
+
+    final queryLower = searchQuery.toLowerCase();
+    final nextChar = String.fromCharCode(queryLower.codeUnitAt(queryLower.length - 1) + 1);
+    final endValue = queryLower.substring(0, queryLower.length - 1) + nextChar;
+
+    return _firestore
+        .collection(_collectionPath)
+        .where('categoryId', isEqualTo: categoryId)
+        .where('isActive', isEqualTo: true)
+        .where('name_lowercase', isGreaterThanOrEqualTo: queryLower)
+        .where('name_lowercase', isLessThan: endValue)
+        .orderBy('name_lowercase')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
+          .toList();
+    }).handleError((error) {
+      print('Error searching products by category: $error');
+      return <ProductModel>[];
+    });
+  }
+
+  /// Search products by name or description (fallback method)
   /// Implements basic search (case-insensitive prefix matching)
   Future<List<ProductModel>> searchProducts(String query) async {
     try {
@@ -229,6 +289,7 @@ class ProductService {
     try {
       final docRef = await _firestore.collection(_collectionPath).add({
         'name': name,
+        'name_lowercase': name.toLowerCase(),
         'description': description,
         'price': price,
         'discountPrice': discountPrice,
@@ -269,7 +330,10 @@ class ProductService {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      if (name != null) updateData['name'] = name;
+      if (name != null) {
+        updateData['name'] = name;
+        updateData['name_lowercase'] = name.toLowerCase();
+      }
       if (description != null) updateData['description'] = description;
       if (price != null) updateData['price'] = price;
       if (discountPrice != null) updateData['discountPrice'] = discountPrice;
