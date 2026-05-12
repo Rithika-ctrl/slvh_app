@@ -154,6 +154,38 @@ class _ProductCardState extends State<ProductCard>
                       ),
                     ),
 
+                  // ── Max Order Qty Badge (Top Right, below discount) ──
+                  if (widget.product.maxOrderQty != null)
+                    Positioned(
+                      top: hasDiscount ? 38 : 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.orange.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.orange.withOpacity(0.3),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          'Max: ${widget.product.maxOrderQty}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+
                   // ── Stock Badge (Top Left) ─────────────────────────
                   Positioned(
                     top: 8,

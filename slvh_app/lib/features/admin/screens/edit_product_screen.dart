@@ -115,6 +115,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         'stock': data.stock,
         'unitType': data.unitType,
         'unit_label': data.unitLabel,
+        'max_order_qty': data.maxOrderQty,
         'isActive': data.isActive,
         'updatedAt': FieldValue.serverTimestamp(),
       });

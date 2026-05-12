@@ -286,6 +286,7 @@ class ProductService {
     required int stock,
     required String unitType,
     required String unitLabel,
+    int? maxOrderQty,
   }) async {
     try {
       final docRef = await _firestore.collection(_collectionPath).add({
@@ -299,6 +300,7 @@ class ProductService {
         'stock': stock,
         'unitType': unitType,
         'unit_label': unitLabel,
+        'max_order_qty': maxOrderQty,
         'isActive': true,
         'rating': null,
         'reviewCount': 0,
@@ -326,6 +328,7 @@ class ProductService {
     int? stock,
     String? unitType,
     String? unitLabel,
+    int? maxOrderQty,
     bool? isActive,
   }) async {
     try {
@@ -345,6 +348,7 @@ class ProductService {
       if (stock != null) updateData['stock'] = stock;
       if (unitType != null) updateData['unitType'] = unitType;
       if (unitLabel != null) updateData['unit_label'] = unitLabel;
+      if (maxOrderQty != null) updateData['max_order_qty'] = maxOrderQty;
       if (isActive != null) updateData['isActive'] = isActive;
 
       await _firestore

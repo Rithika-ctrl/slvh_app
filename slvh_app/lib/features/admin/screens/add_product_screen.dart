@@ -94,6 +94,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'stock': data.stock,
         'unitType': data.unitType,
         'unit_label': data.unitLabel,
+        'max_order_qty': data.maxOrderQty,
         'isActive': data.isActive,
         'rating': null,
         'reviewCount': 0,

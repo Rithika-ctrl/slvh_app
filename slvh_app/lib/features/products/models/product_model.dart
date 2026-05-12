@@ -15,6 +15,7 @@ class ProductModel {
   final int stock;
   final String unitType; // e.g., "250ml", "500g", "pack", "bottle" (deprecated, use unitLabel)
   final String unitLabel; // e.g., "kg", "piece", "litre", "dozen", "packet"
+  final int? maxOrderQty; // Max units customer can order per transaction (null = unlimited)
   final bool isActive;
   final double? rating;
   final int? reviewCount;
@@ -33,6 +34,7 @@ class ProductModel {
     required this.stock,
     required this.unitType,
     required this.unitLabel,
+    this.maxOrderQty,
     required this.isActive,
     this.rating,
     this.reviewCount,
@@ -66,6 +68,7 @@ class ProductModel {
       stock: data['stock'] as int? ?? 0,
       unitType: data['unitType'] as String? ?? '',
       unitLabel: data['unit_label'] as String? ?? '',
+      maxOrderQty: data['max_order_qty'] as int?,
       isActive: data['isActive'] as bool? ?? true,
       rating: (data['rating'] as num?)?.toDouble(),
       reviewCount: data['reviewCount'] as int?,
@@ -87,6 +90,7 @@ class ProductModel {
       'stock': stock,
       'unitType': unitType,
       'unit_label': unitLabel,
+      'max_order_qty': maxOrderQty,
       'isActive': isActive,
       'rating': rating,
       'reviewCount': reviewCount,
@@ -108,6 +112,7 @@ class ProductModel {
     int? stock,
     String? unitType,
     String? unitLabel,
+    int? maxOrderQty,
     bool? isActive,
     double? rating,
     int? reviewCount,
@@ -126,6 +131,7 @@ class ProductModel {
       stock: stock ?? this.stock,
       unitType: unitType ?? this.unitType,
       unitLabel: unitLabel ?? this.unitLabel,
+      maxOrderQty: maxOrderQty ?? this.maxOrderQty,
       isActive: isActive ?? this.isActive,
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,

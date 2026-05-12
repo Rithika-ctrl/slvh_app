@@ -6,6 +6,7 @@ import 'package:slvh_app/features/cart/services/cart_service.dart';
 import 'package:slvh_app/features/products/models/pricing_tier_model.dart';
 import 'package:slvh_app/features/products/models/product_model.dart';
 import 'package:slvh_app/features/products/services/pricing_service.dart';
+import 'package:slvh_app/features/products/services/product_service.dart';
 
 /// Provider for managing shopping cart state
 /// Handles add, remove, update operations
@@ -13,6 +14,7 @@ import 'package:slvh_app/features/products/services/pricing_service.dart';
 class CartProvider extends ChangeNotifier {
   final List<CartItemModel> _items = [];
   final PricingService _pricingService = PricingService();
+  final ProductService _productService = ProductService();
   final CartService _cartService = CartService();
   SharedPreferences? _prefs;
 
@@ -67,23 +69,43 @@ class CartProvider extends ChangeNotifier {
   bool get isEmpty => _items.isEmpty;
 
   /// Add product to cart
+  /// Respects product.maxOrderQty limit (silently caps quantity)
   Future<void> addToCart(
     ProductModel product, {
     int quantity = 1,
     PricingTierModel? selectedTier,
   }) async {
+    // Validate quantity against max order limit
+    int validQuantity = quantity;
+    if (product.maxOrderQty != null && quantity > product.maxOrderQty!) {
+      print('⚠️ Quantity exceeds max order limit (${product.maxOrderQty}). Capping quantity.');
+      validQuantity = product.maxOrderQty!;
+    }
+
     // Check if product already in cart
     final existingIndex =
         _items.indexWhere((item) => item.productId == product.id);
 
     if (existingIndex != -1) {
       // Update quantity
-      await updateQuantity(product.id, _items[existingIndex].quantity + quantity);
+      final newTotal = _items[existingIndex].quantity + validQuantity;
+      final cappedTotal = product.maxOrderQty != null 
+          ? (newTotal > product.maxOrderQty! ? product.maxOrderQty! : newTotal)
+          : newTotal;
+      
+      if (cappedTotal < _items[existingIndex].quantity) {
+        print('⚠️ Adding quantity would exceed max order limit. Keeping current quantity.');
+        await _saveCart();
+        notifyListeners();
+        return;
+      }
+      
+      await updateQuantity(product.id, cappedTotal);
     } else {
       // Add new item
       final cartItem = CartItemModel.fromProduct(
         product,
-        quantity: quantity,
+        quantity: validQuantity,
         selectedTier: selectedTier,
       );
       _items.add(cartItem);
@@ -101,6 +123,7 @@ class CartProvider extends ChangeNotifier {
   }
 
   /// Update item quantity and auto-select best pricing tier
+  /// Respects product.maxOrderQty limit (silently caps quantity)
   Future<void> updateQuantity(String productId, int newQuantity) async {
     final index = _items.indexWhere((item) => item.productId == productId);
     if (index == -1) return;
@@ -110,8 +133,18 @@ class CartProvider extends ChangeNotifier {
       return;
     }
 
+    // Get product to check max order quantity
+    final product = await _productService.getProductById(productId);
+    final cappedQuantity = product?.maxOrderQty != null
+        ? (newQuantity > product!.maxOrderQty! ? product.maxOrderQty! : newQuantity)
+        : newQuantity;
+
+    if (cappedQuantity < newQuantity) {
+      print('⚠️ Quantity capped to ${product!.maxOrderQty} (max order limit)');
+    }
+
     // Update quantity
-    _items[index].quantity = newQuantity;
+    _items[index].quantity = cappedQuantity;
 
     // Auto-select best matching pricing tier
     try {

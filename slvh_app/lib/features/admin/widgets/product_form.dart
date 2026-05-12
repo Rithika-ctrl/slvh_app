@@ -17,6 +17,7 @@ class ProductFormData {
   final int stock;
   final String unitType;
   final String unitLabel;
+  final int? maxOrderQty;
   final bool isActive;
   final List<String> existingImageUrls;
   final List<ProductImageUpload> newImages;
@@ -30,6 +31,7 @@ class ProductFormData {
     required this.stock,
     required this.unitType,
     required this.unitLabel,
+    required this.maxOrderQty,
     required this.isActive,
     required this.existingImageUrls,
     required this.newImages,
@@ -82,6 +84,7 @@ class _ProductFormState extends State<ProductForm> {
   late final TextEditingController _stockController;
   late final TextEditingController _unitController;
   late final TextEditingController _unitLabelController;
+  late final TextEditingController _maxOrderQtyController;
 
   late bool _isActive;
   String? _categoryId;
@@ -106,6 +109,8 @@ class _ProductFormState extends State<ProductForm> {
         TextEditingController(text: product?.stock.toString() ?? '');
     _unitController = TextEditingController(text: product?.unitType ?? '');
     _unitLabelController = TextEditingController(text: product?.unitLabel ?? '');
+    _maxOrderQtyController =
+        TextEditingController(text: product?.maxOrderQty?.toString() ?? '');
     _isActive = product?.isActive ?? true;
     _categoryId = product?.categoryId;
     _existingImages = [...?product?.images];
@@ -124,6 +129,7 @@ class _ProductFormState extends State<ProductForm> {
     _stockController.dispose();
     _unitController.dispose();
     _unitLabelController.dispose();
+    _maxOrderQtyController.dispose();
     super.dispose();
   }
 
@@ -217,6 +223,16 @@ class _ProductFormState extends State<ProductForm> {
                       helperText: 'Standardized unit: kg, piece, litre, etc.',
                     ),
                     validator: _required,
+                  ),
+                  TextFormField(
+                    controller: _maxOrderQtyController,
+                    decoration: const InputDecoration(
+                      labelText: 'Max order quantity (optional)',
+                      hintText: 'Leave empty for unlimited',
+                      prefixIcon: Icon(Icons.shopping_cart_outlined),
+                      helperText: 'Maximum units per customer per order',
+                    ),
+                    keyboardType: TextInputType.number,
                   ),
                 ];
 
@@ -489,6 +505,9 @@ class _ProductFormState extends State<ProductForm> {
         stock: int.parse(_stockController.text.trim()),
         unitType: _unitController.text.trim(),
         unitLabel: _unitLabelController.text.trim(),
+        maxOrderQty: _maxOrderQtyController.text.trim().isEmpty
+            ? null
+            : int.tryParse(_maxOrderQtyController.text.trim()),
         isActive: _isActive,
         existingImageUrls: List.unmodifiable(_existingImages),
         newImages: List.unmodifiable(_newImages),

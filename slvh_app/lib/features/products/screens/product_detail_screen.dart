@@ -258,6 +258,46 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         // ── Quantity Selector ──────────────────────────
                         _buildQuantitySelector(),
 
+                        // ── Max Order Qty Warning ──────────────────────
+                        if (product.maxOrderQty != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.orange.withOpacity(0.1),
+                                border: Border.all(
+                                  color: AppColors.orange.withOpacity(0.5),
+                                  width: 1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outlined,
+                                    size: 16,
+                                    color: AppColors.orange,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Maximum ${product.maxOrderQty} units per order',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.orange.withOpacity(0.8),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
                         const SizedBox(height: 24),
 
                         // ── Add to Cart Button ────────────────────────
@@ -487,15 +527,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
           const SizedBox(width: 12),
           GestureDetector(
             onTap: () {
-              setState(() => _quantity++);
+              final maxQty = product.maxOrderQty;
+              if (maxQty != null && _quantity >= maxQty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Max order quantity is $maxQty'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                setState(() => _quantity++);
+              }
             },
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppColors.orange.withOpacity(0.2),
+                color: product.maxOrderQty != null && _quantity >= product.maxOrderQty!
+                    ? Colors.grey.withOpacity(0.2)
+                    : AppColors.orange.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Icon(Icons.add, size: 18, color: AppColors.orange),
+              child: Icon(
+                Icons.add,
+                size: 18,
+                color: product.maxOrderQty != null && _quantity >= product.maxOrderQty!
+                    ? Colors.grey
+                    : AppColors.orange,
+              ),
             ),
           ),
         ],
@@ -506,9 +564,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   /// Build add to cart button
   Widget _buildAddToCartButton(ProductModel product) {
     final isOutOfStock = !product.isInStock;
+    final exceedsMaxQty = product.maxOrderQty != null && _quantity > product.maxOrderQty!;
 
     return GestureDetector(
-      onTap: isOutOfStock
+      onTap: isOutOfStock || exceedsMaxQty
           ? null
           : () {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -524,7 +583,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          gradient: isOutOfStock
+          gradient: isOutOfStock || exceedsMaxQty
               ? LinearGradient(
                   colors: [Colors.grey[400]!, Colors.grey[500]!],
                 )
@@ -532,7 +591,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   colors: [Color(0xFFFF9F43), AppColors.orange],
                 ),
           borderRadius: BorderRadius.circular(14),
-          boxShadow: isOutOfStock
+          boxShadow: isOutOfStock || exceedsMaxQty
               ? []
               : [
                   BoxShadow(
@@ -544,7 +603,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         ),
         child: Center(
           child: Text(
-            isOutOfStock ? 'Out of Stock' : 'Add to Cart',
+            isOutOfStock
+                ? 'Out of Stock'
+                : exceedsMaxQty
+                    ? 'Max: ${product.maxOrderQty} units'
+                    : 'Add to Cart',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w900,
