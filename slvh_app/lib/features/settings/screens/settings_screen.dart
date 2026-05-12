@@ -28,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _upiIdCtrl;
   late TextEditingController _upiQrCtrl;
   late TextEditingController _lowStockCtrl;
+  late TextEditingController _minOrderValueCtrl;
 
   // ── State ─────────────────────────────────────────────────────
   ShopSettingsModel? _settings;
@@ -42,6 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _delayHours = 1;
   int _slotDuration = 30;
   int _slotCapacity = 5;
+  double _minOrderValue = 0.0;
   bool _holidayMode = false;
   bool _orderPause = false;
 
@@ -51,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _upiIdCtrl = TextEditingController();
     _upiQrCtrl = TextEditingController();
     _lowStockCtrl = TextEditingController();
+    _minOrderValueCtrl = TextEditingController();
     _loadSettings();
   }
 
@@ -59,6 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _upiIdCtrl.dispose();
     _upiQrCtrl.dispose();
     _lowStockCtrl.dispose();
+    _minOrderValueCtrl.dispose();
     super.dispose();
   }
 
@@ -88,11 +92,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _delayHours = s.delayHours;
       _slotDuration = s.slotDuration;
       _slotCapacity = s.slotCapacity;
+      _minOrderValue = s.minOrderValue;
       _holidayMode = s.holidayMode;
       _orderPause = s.orderPause;
       _upiIdCtrl.text = s.upiId;
       _upiQrCtrl.text = s.upiQrImage;
       _lowStockCtrl.text = s.lowStockThreshold.toString();
+      _minOrderValueCtrl.text = s.minOrderValue.toStringAsFixed(2);
     });
   }
 
@@ -115,6 +121,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         slotCapacity: _slotCapacity,
         upiId: _upiIdCtrl.text.trim(),
         upiQrImage: _upiQrCtrl.text.trim(),
+        minOrderValue: double.tryParse(_minOrderValueCtrl.text) ?? 0.0,
         holidayMode: _holidayMode,
         orderPause: _orderPause,
         lowStockThreshold: int.tryParse(_lowStockCtrl.text) ?? 5,
@@ -397,6 +404,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             final n = int.tryParse(v);
                             if (n == null || n < 0) {
                               return 'Enter a valid non-negative integer';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildSection(
+                    icon: Icons.shopping_cart_rounded,
+                    title: 'Order Settings',
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: TextFormField(
+                          controller: _minOrderValueCtrl,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                              RegExp(r'^\d+\.?\d{0,2}'),
+                            ),
+                          ],
+                          decoration: InputDecoration(
+                            labelText: 'Minimum Order Value',
+                            hintText: '100',
+                            helperText:
+                                'Customers must spend at least this amount to checkout',
+                            prefixIcon: const Icon(
+                              Icons.currency_rupee_rounded,
+                              color: AppColors.orange,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.orangePale,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                  AppSpacing.inputRadius),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                  AppSpacing.inputRadius),
+                              borderSide: const BorderSide(
+                                  color: AppColors.orange, width: 1.5),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'Please enter a minimum order value';
+                            }
+                            final n = double.tryParse(v);
+                            if (n == null || n < 0) {
+                              return 'Enter a valid amount (e.g., 100.00)';
                             }
                             return null;
                           },

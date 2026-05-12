@@ -17,6 +17,9 @@ class ShopSettingsModel {
   final String upiId; // UPI ID for payments
   final String upiQrImage; // URL / base64 of QR image
 
+  // ── Order configuration ──────────────────────────────────────
+  final double minOrderValue; // Minimum order value required (e.g., 100)
+
   // ── Operational toggles ──────────────────────────────────────
   final bool holidayMode; // No slots available when true
   final bool orderPause; // Pauses new orders when true
@@ -36,6 +39,7 @@ class ShopSettingsModel {
     this.slotCapacity = 5,
     this.upiId = '',
     this.upiQrImage = '',
+    this.minOrderValue = 0.0,
     this.holidayMode = false,
     this.orderPause = false,
     this.lowStockThreshold = 5,
@@ -53,6 +57,7 @@ class ShopSettingsModel {
         'slot_capacity': slotCapacity,
         'upi_id': upiId,
         'upi_qr_image': upiQrImage,
+        'min_order_value': minOrderValue,
         'holiday_mode': holidayMode,
         'order_pause': orderPause,
         'low_stock_threshold': lowStockThreshold,
@@ -73,6 +78,7 @@ class ShopSettingsModel {
         slotCapacity: (data['slot_capacity'] as num?)?.toInt() ?? 5,
         upiId: data['upi_id'] as String? ?? '',
         upiQrImage: data['upi_qr_image'] as String? ?? '',
+        minOrderValue: (data['min_order_value'] as num?)?.toDouble() ?? 0.0,
         holidayMode: data['holiday_mode'] as bool? ?? false,
         orderPause: data['order_pause'] as bool? ?? false,
         lowStockThreshold: (data['low_stock_threshold'] as num?)?.toInt() ?? 5,
@@ -91,6 +97,7 @@ class ShopSettingsModel {
     int? slotCapacity,
     String? upiId,
     String? upiQrImage,
+    double? minOrderValue,
     bool? holidayMode,
     bool? orderPause,
     int? lowStockThreshold,
@@ -106,6 +113,7 @@ class ShopSettingsModel {
         slotCapacity: slotCapacity ?? this.slotCapacity,
         upiId: upiId ?? this.upiId,
         upiQrImage: upiQrImage ?? this.upiQrImage,
+        minOrderValue: minOrderValue ?? this.minOrderValue,
         holidayMode: holidayMode ?? this.holidayMode,
         orderPause: orderPause ?? this.orderPause,
         lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,

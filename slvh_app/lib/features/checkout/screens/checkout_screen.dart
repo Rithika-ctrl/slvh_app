@@ -10,6 +10,7 @@ import 'package:slvh_app/features/orders/services/order_service.dart';
 import 'package:slvh_app/features/payments/screens/payment_screen.dart';
 import 'package:slvh_app/features/pickup_slots/models/slot_model.dart';
 import 'package:slvh_app/features/pickup_slots/screens/slot_picker_screen.dart';
+import 'package:slvh_app/features/settings/services/settings_service.dart';
 
 /// Checkout screen orchestrates the full order creation flow
 /// Flow: Cart → Slot Selection → Order Creation → Payment
@@ -27,6 +28,7 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final OrderService _orderService = OrderService();
+  final SettingsService _settingsService = SettingsService.instance;
 
   DateTime? _selectedPickupDate;
   PickupSlotModel? _selectedPickupSlot;
@@ -66,6 +68,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) {
         throw Exception('User not authenticated');
+      }
+
+      // Validate minimum order value
+      final settings = await _settingsService.getSettings();
+      final cartTotal = widget.cartSummary['total'] as num? ?? 0;
+      if (settings.minOrderValue > 0 && cartTotal < settings.minOrderValue) {
+        setState(() {
+          _errorMessage = 
+            'Order total must be at least ₹${settings.minOrderValue.toStringAsFixed(0)}';
+          _isCreatingOrder = false;
+        });
+        return;
       }
 
       // Build order items from cart

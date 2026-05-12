@@ -70,4 +70,12 @@ class SettingsService {
       SetOptions(merge: true),
     );
   }
+
+  /// Update minimum order value
+  Future<void> setMinOrderValue(double minValue) async {
+    await _ref.set(
+      {'min_order_value': minValue, 'updated_at': FieldValue.serverTimestamp()},
+      SetOptions(merge: true),
+    );
+  }
 }
