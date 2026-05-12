@@ -4,6 +4,8 @@ import 'package:slvh_app/features/orders/services/order_service.dart';
 import 'package:slvh_app/features/orders/services/order_cancellation_service.dart';
 import 'package:slvh_app/features/orders/widgets/status_badge.dart';
 import 'package:slvh_app/features/orders/widgets/cancel_order_dialog.dart';
+import 'package:slvh_app/features/payments/services/payment_rejection_service.dart';
+import 'package:slvh_app/features/payments/screens/refund_instructions_screen.dart';
 
 /// Order detail screen showing full order information and real-time status
 class OrderDetailScreen extends StatefulWidget {
@@ -20,6 +22,8 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final OrderService _orderService = OrderService();
+  final PaymentRejectionService _paymentRejectionService =
+      PaymentRejectionService();
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +92,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 // Cancel order button (visible only when payment verification pending)
                 if (order.status == OrderStatus.paymentVerificationPending)
                   _buildCancelOrderButton(context, order),
+                
+                // Payment rejection notice (visible when payment rejected)
+                if (order.status == OrderStatus.paymentRejected)
+                  _buildPaymentRejectionNotice(context, order),
+                
                 const SizedBox(height: 24),
               ],
             ),
@@ -457,6 +466,121 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         Navigator.of(context).pop();
       }
     }
+  }
+
+  /// Build payment rejection notice
+  Widget _buildPaymentRejectionNotice(BuildContext context, OrderModel order) {
+    return StreamBuilder(
+      stream: _paymentRejectionService.watchRejectedPaymentByOrderId(order.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container();
+        }
+
+        final payment = snapshot.data;
+        if (payment == null) {
+          return Container();
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.red[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red[200]!, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red[700], size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Payment Rejected',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red[700],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              if (payment.rejectionReason != null)
+                                Text(
+                                  payment.rejectionReason!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red[600],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => _showRefundInstructions(context, order, payment),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'View Refund Instructions',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Navigate to refund instructions screen
+  Future<void> _showRefundInstructions(
+    BuildContext context,
+    OrderModel order,
+    dynamic payment,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => RefundInstructionsScreen(
+          order: order,
+          payment: payment,
+          onRetryPayment: () {
+            // Navigate to payment screen for retry
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Retry payment flow (TODO: implement)'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 

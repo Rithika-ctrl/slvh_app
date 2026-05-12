@@ -108,7 +108,7 @@ service cloud.firestore {
       // Users can create payments
       allow create: if request.auth.token.phone_number != null;
       
-      // Admin can update payment status
+      // Admin can update payment status (verify, reject, etc)
       allow update: if isAdmin() || isCloudFunction();
     }
 

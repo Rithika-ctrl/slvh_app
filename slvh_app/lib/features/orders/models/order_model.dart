@@ -5,6 +5,7 @@ enum OrderStatus {
   pendingPayment('Pending Payment'),
   paymentRetryPending('Payment Retry Pending'),
   paymentVerificationPending('Payment Verification Pending'),
+  paymentRejected('Payment Rejected'),
   confirmed('Confirmed'),
   preparing('Preparing'),
   readyForPickup('Ready for Pickup'),
@@ -28,6 +29,7 @@ enum OrderStatus {
       case OrderStatus.paymentRetryPending:
       case OrderStatus.paymentVerificationPending:
         return 'FF9800'; // Orange
+      case OrderStatus.paymentRejected:
       case OrderStatus.cancelled:
         return 'F44336'; // Red
     }
