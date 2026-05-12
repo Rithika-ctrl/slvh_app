@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/auth/services/otp_resend_service.dart';
 import 'package:slvh_app/features/auth/services/session_manager_service.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
-
+import 'package:flutter/foundation.dart';
 /// Real Firebase Authentication Service
 ///
 /// Customer login  → Firebase Phone Auth (SMS OTP)

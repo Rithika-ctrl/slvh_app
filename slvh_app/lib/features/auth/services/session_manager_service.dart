@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
-
+import 'package:flutter/foundation.dart';
 /// Session Management Service
 ///
 /// Handles:
