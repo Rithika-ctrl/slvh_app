@@ -113,7 +113,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         createdAt: DateTime.now(),
       );
 
-      // Create order with atomic batch write (reduces stock)
+      // Create order with atomic batch write (reduces stock and books slot)
       final orderId = await _orderService.createOrder(order: order);
 
       if (!mounted) return;

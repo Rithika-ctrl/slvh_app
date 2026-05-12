@@ -208,13 +208,21 @@ class SlotService {
     DateTime date,
     PickupSlotModel slot,
   ) async {
+    return bookSlotById(date, slot.id);
+  }
+
+  /// Book a slot by ID using Firestore transaction
+  Future<bool> bookSlotById(
+    DateTime date,
+    String slotId,
+  ) async {
     try {
       final dateStr = _formatDate(date);
       final slotRef = _firestore
           .collection(_slotsCollection)
           .doc(dateStr)
           .collection('times')
-          .doc(slot.id);
+          .doc(slotId);
 
       // Use transaction for atomic operation
       final result = await _firestore.runTransaction((transaction) async {
@@ -245,9 +253,9 @@ class SlotService {
       });
 
       if (result) {
-        print('✅ Slot booked: ${slot.getDisplayTime()}');
+        print('✅ Slot booked: $slotId');
       } else {
-        print('❌ Slot is full');
+        print('❌ Slot is full: $slotId');
       }
 
       return result;

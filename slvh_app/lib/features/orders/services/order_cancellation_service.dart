@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
+import 'package:slvh_app/features/pickup_slots/services/slot_service.dart';
 
 /// Service for handling order cancellations
 /// Allows customers to cancel orders with payment_verification_pending status
@@ -66,6 +67,16 @@ class OrderCancellationService {
 
       // 3. Commit batch atomically
       await batch.commit();
+
+      // 4. Cancel slot booking (decrements count) - outside batch as it uses its own transaction
+      try {
+        final pickupDate = DateTime.parse(order.pickupDate);
+        await _slotService.cancelSlotBooking(pickupDate, order.pickupSlotId);
+        print('✅ Slot booking cancelled: ${order.pickupSlotId}');
+      } catch (e) {
+        print('⚠️ Warning: Failed to cancel slot booking: $e');
+        // We don't rethrow here because the order status and stock have already been updated
+      }
 
       return true;
     } catch (e) {

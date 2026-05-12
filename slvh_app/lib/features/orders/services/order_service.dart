@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/inventory/services/stock_service.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
+import 'package:slvh_app/features/pickup_slots/services/slot_service.dart';
 
 /// Service for managing orders (Firestore operations)
 /// Uses Firestore Transactions to atomically reserve stock
@@ -9,6 +10,7 @@ import 'package:slvh_app/features/notifications/services/notification_service.da
 class OrderService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final StockService _stockService = StockService();
+  final SlotService _slotService = SlotService();
 
   /// Create order with atomic stock reservation using Firestore Transaction
   /// 
@@ -34,7 +36,30 @@ class OrderService {
       final newStockLevels = await _stockService.reserveStock(order.items);
       print('✅ Stock reserved atomically: $newStockLevels');
 
-      // STEP 2: Create order document (stock is already reserved)
+      // STEP 2: Book pickup slot
+      try {
+        final pickupDate = DateTime.parse(order.pickupDate);
+        final slotBooked = await _slotService.bookSlotById(
+          pickupDate,
+          order.pickupSlotId,
+        );
+
+        if (!slotBooked) {
+          throw Exception(
+            'Slot booking failed: pickup slot ${order.pickupSlotId} is full on ${order.pickupDate}',
+          );
+        }
+        print('✅ Pickup slot booked: ${order.pickupSlotId} on ${order.pickupDate}');
+      } catch (e) {
+        // NOTE: If slot booking fails, stock has already been reserved.
+        // In a production environment, you might want a compensating action to restore stock,
+        // or wrap both in a single large transaction.
+        // For now, we throw and the UI will handle it.
+        print('❌ Slot booking failed: $e');
+        rethrow;
+      }
+
+      // STEP 3: Create order document (stock and slot are already reserved)
       final orderRef = _firestore.collection('orders').doc();
       final orderId = orderRef.id;
 
