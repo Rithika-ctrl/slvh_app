@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:slvh_app/features/auth/services/otp_resend_service.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
 
 /// Real Firebase Authentication Service
@@ -10,6 +11,7 @@ import 'package:slvh_app/features/notifications/services/notification_service.da
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final OTPResendService _otpResendService = OTPResendService();
 
   // ─── Storage keys ────────────────────────────────────────────
   static const String _isLoggedInKey   = 'user_logged_in';
@@ -75,12 +77,81 @@ class AuthService {
       final phone = result.user?.phoneNumber ??
           '+91${phoneNumber.replaceAll(RegExp(r'\D'), '')}';
       await _saveCustomerSession(phone);
+      
+      // Reset resend counter after successful verification
+      await _otpResendService.resetResendCounter(phone);
+      
       return true;
     } on FirebaseAuthException catch (e) {
       onError(e.message ?? 'Invalid OTP. Please try again.');
       return false;
     } catch (e) {
       onError('Verification failed: ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// Resend OTP with throttling and rate limiting
+  /// 
+  /// Enforces:
+  /// 1. Minimum 30 seconds between resends
+  /// 2. Maximum 3 resends per OTP session
+  /// 3. Firebase Auth resend token for optimization
+  /// 
+  /// Returns: true if OTP was resent successfully
+  /// Throws: OTPResendException if rate-limited
+  Future<bool> resendOTP({
+    required String phoneNumber,
+    int? resendToken,
+    required Function(String verificationId, int? resendToken) onCodeSent,
+    required Function(String errorMessage) onError,
+  }) async {
+    try {
+      print('📲 Attempting OTP resend for $phoneNumber...');
+
+      // STEP 1: Check rate limiting via OTPResendService
+      await _otpResendService.requestResend(
+        phoneNumber: phoneNumber,
+        onError: (msg) => onError(msg),
+      );
+
+      // STEP 2: Resend via Firebase (throttling already enforced)
+      final normalised = phoneNumber.startsWith('+')
+          ? phoneNumber
+          : '+91${phoneNumber.replaceAll(RegExp(r'\D'), '')}';
+
+      await _auth.verifyPhoneNumber(
+        phoneNumber: normalised,
+        timeout: const Duration(seconds: 120),
+        resendToken: resendToken,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          try {
+            final result = await _auth.signInWithCredential(credential);
+            final phone = result.user?.phoneNumber ?? normalised;
+            await _saveCustomerSession(phone);
+            print('✅ OTP auto-verified during resend');
+          } catch (_) {}
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          onError(e.message ?? 'Phone verification failed.');
+        },
+        codeSent: (String verificationId, int? newResendToken) {
+          print('✅ OTP resent successfully for $normalised');
+          onCodeSent(verificationId, newResendToken);
+        },
+        codeAutoRetrievalTimeout: (_) {},
+      );
+
+      return true;
+    } on OTPResendException catch (e) {
+      // Rate limiting error
+      print('❌ OTP resend rate-limited: ${e.message}');
+      onError(e.message);
+      rethrow;
+    } catch (e) {
+      final msg = 'Failed to resend OTP: ${e.toString()}';
+      print('❌ $msg');
+      onError(msg);
       return false;
     }
   }

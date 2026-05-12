@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:slvh_app/features/auth/services/otp_resend_service.dart';
+import 'package:slvh_app/features/auth/widgets/otp_countdown_timer.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
@@ -10,11 +12,13 @@ import '../services/auth_service.dart';
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
   final String verificationId;
+  final int? resendToken;
 
   const OTPScreen({
     super.key,
     required this.phoneNumber,
     required this.verificationId,
+    this.resendToken,
   });
 
   @override
@@ -29,10 +33,14 @@ class _OTPScreenState extends State<OTPScreen>
       List.generate(6, (_) => FocusNode());
 
   final AuthService _authService = AuthService();
+  final OTPResendService _otpResendService = OTPResendService();
+
   bool _isLoading = false;
+  bool _isResending = false;
   String? _errorMessage;
-  int _resendCountdown = 60;
-  bool _canResend = false;
+  int _resendAttempts = 0;
+  bool _otpExpired = false;
+  int? _currentResendToken;
 
   // Shake animation
   late AnimationController _shakeCtrl;
@@ -41,12 +49,13 @@ class _OTPScreenState extends State<OTPScreen>
   @override
   void initState() {
     super.initState();
+    _currentResendToken = widget.resendToken;
     _shakeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
     _shakeAnim = Tween<double>(begin: 0, end: 1).animate(_shakeCtrl);
-    _startResendTimer();
+    _loadResendAttempts();
   }
 
   @override
@@ -57,24 +66,14 @@ class _OTPScreenState extends State<OTPScreen>
     super.dispose();
   }
 
-  void _startResendTimer() {
-    _resendCountdown = 60;
-    _canResend = false;
-    _tick();
-  }
-
-  void _tick() {
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() {
-        _resendCountdown--;
-        if (_resendCountdown <= 0) {
-          _canResend = true;
-        } else {
-          _tick();
-        }
-      });
-    });
+  /// Load previous resend attempts from Firestore
+  Future<void> _loadResendAttempts() async {
+    try {
+      final count = await _otpResendService.getResendCount(widget.phoneNumber);
+      setState(() => _resendAttempts = count);
+    } catch (e) {
+      print('⚠️ Failed to load resend attempts: $e');
+    }
   }
 
   void _onDigitEntered(String value, int index) {
@@ -94,10 +93,16 @@ class _OTPScreenState extends State<OTPScreen>
     _shakeCtrl.forward(from: 0);
   }
 
+  /// Verify OTP and proceed to home
   void _verifyOTP() async {
     if (_fullOTP.length != 6) {
       _shake();
       setState(() => _errorMessage = 'Please enter all 6 digits');
+      return;
+    }
+
+    if (_otpExpired) {
+      setState(() => _errorMessage = 'OTP expired. Please request a new one.');
       return;
     }
 
@@ -117,30 +122,85 @@ class _OTPScreenState extends State<OTPScreen>
         });
         _shake();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: AppColors.danger,
+          ),
         );
       },
     );
 
-    if (isValid) {
+    if (isValid && mounted) {
       setState(() => _isLoading = false);
-      if (mounted) {
-        context.go('/home');
-      }
-    } else {
+      // Clear OTP session on successful verification
+      await _otpResendService.clearOTPSession(widget.phoneNumber);
+      context.go('/home');
+    } else if (mounted) {
       setState(() => _isLoading = false);
     }
   }
 
-  void _resendOTP() {
-    if (!_canResend) return;
-    for (var c in _controllers) c.clear();
-    _focusNodes[0].requestFocus();
-    setState(() => _errorMessage = null);
-    _startResendTimer();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('OTP resent! Check your SMS.')),
-    );
+  /// Resend OTP with throttling and rate limiting
+  void _resendOTP() async {
+    setState(() {
+      _isResending = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _authService.resendOTP(
+        phoneNumber: widget.phoneNumber,
+        resendToken: _currentResendToken,
+        onCodeSent: (verificationId, resendToken) {
+          setState(() {
+            _isResending = false;
+            _currentResendToken = resendToken;
+            _resendAttempts++;
+          });
+
+          // Clear OTP input
+          for (var c in _controllers) c.clear();
+          _focusNodes[0].requestFocus();
+
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                  'OTP resent! Check your SMS. Wait 30s before next resend.'),
+              backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        },
+        onError: (msg) {
+          setState(() {
+            _isResending = false;
+            _errorMessage = msg;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: AppColors.danger,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        },
+      );
+    } on OTPResendException catch (e) {
+      setState(() {
+        _isResending = false;
+        _errorMessage = e.message;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.orange,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
@@ -242,6 +302,22 @@ class _OTPScreenState extends State<OTPScreen>
 
             const SizedBox(height: 24),
 
+            // ── OTP Countdown Timer ──────────────────────────
+            OTPCountdownTimer(
+              totalSeconds: 60,
+              resendAvailableAfter: 30,
+              onExpired: () {
+                setState(() => _otpExpired = true);
+              },
+              onResendAvailable: () {
+                // Timer shows resend is available
+              },
+              onResendTapped: _resendOTP,
+              isResending: _isResending,
+            ),
+
+            const SizedBox(height: 24),
+
             // ── OTP boxes ────────────────────────────────────
             AnimatedBuilder(
               animation: _shakeAnim,
@@ -298,39 +374,12 @@ class _OTPScreenState extends State<OTPScreen>
               onTap: _verifyOTP,
             ),
 
-            const SizedBox(height: 14),
+            const SizedBox(height: 20),
 
-            // ── Resend ───────────────────────────────────────
-            Center(
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMuted,
-                  ),
-                  children: [
-                    const TextSpan(text: "Didn't receive it? "),
-                    WidgetSpan(
-                      child: GestureDetector(
-                        onTap: _canResend ? _resendOTP : null,
-                        child: Text(
-                          _canResend
-                              ? '↩ Resend OTP'
-                              : 'Resend in ${_resendCountdown}s',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: _canResend
-                                ? AppColors.orange
-                                : AppColors.textHint,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            // ── Resend attempt counter ───────────────────────
+            OTPResendStatus(
+              currentAttempt: _resendAttempts,
+              maxAttempts: 3,
             ),
 
             const SizedBox(height: 32),
@@ -394,47 +443,33 @@ class _OTPBox extends StatelessWidget {
                 ]
               : null,
         ),
-        child: RawKeyboardListener(
-          focusNode: FocusNode(),
-          onKey: (event) {
-            if (event is RawKeyDownEvent &&
-                event.logicalKey == LogicalKeyboardKey.backspace &&
-                controller.text.isEmpty) {
-              onBackspace();
-            }
-          },
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            enabled: !isLoading,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            maxLength: 1,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textDark,
-            ),
-            decoration: const InputDecoration(
-              counterText: '',
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              filled: false,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-            ),
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: onChanged,
-            autofocus: isFirst,
+        child: TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          enabled: !isLoading,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(1),
+          ],
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
           ),
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onChanged: onChanged,
         ),
       ),
     );
   }
 }
 
-// ── Orange button ─────────────────────────────────────────────────────────────
+// ── Orange Button ────────────────────────────────────────────────────────────
 
 class _OrangeButton extends StatelessWidget {
   final String label;
@@ -452,54 +487,54 @@ class _OrangeButton extends StatelessWidget {
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
+        height: 50,
         width: double.infinity,
-        height: 54,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFF9F43), AppColors.orange],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFFA500),
+              Color(0xFFFF8C00),
+            ],
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: AppColors.orange.withOpacity(0.42),
-              blurRadius: 24,
+              color: AppColors.orange.withOpacity(0.3),
+              blurRadius: 20,
               offset: const Offset(0, 8),
             ),
           ],
         ),
-        child: isLoading
-            ? const Center(
-                child: SizedBox(
-                  width: 22,
-                  height: 22,
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    strokeWidth: 2,
                   ),
-                ),
-              )
-            : Center(
-                child: Text(
+                )
+              : Text(
                   label,
                   style: const TextStyle(
-                    color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
+                    color: Colors.white,
+                    fontFamily: 'Nunito',
                   ),
                 ),
-              ),
+        ),
       ),
     );
   }
 }
 
-// ── Back button ───────────────────────────────────────────────────────────────
+// ── Back button ──────────────────────────────────────────────────────────────
 
 class _BackButton extends StatelessWidget {
   final VoidCallback onTap;
+
   const _BackButton({required this.onTap});
 
   @override
@@ -507,27 +542,18 @@ class _BackButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 42,
-        height: 42,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.78),
-          borderRadius: BorderRadius.circular(14),
+          color: Colors.white.withOpacity(0.24),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0x38DCA03C),
+            color: Colors.white.withOpacity(0.36),
             width: 1.5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFB47820).withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
-        child: const Icon(
-          Icons.arrow_back_ios_new_rounded,
-          color: AppColors.textMuted,
-          size: 18,
+        child: const Center(
+          child: Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
       ),
     );

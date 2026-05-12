@@ -27,10 +27,10 @@ service cloud.firestore {
       // User can read their own document
       allow read: if isPhoneOwner(phoneNumber) || isAdmin() || isCloudFunction();
       
-      // User can update their own document
+      // User can update their own document (includes cart, preferences)
       allow update: if isPhoneOwner(phoneNumber) || isAdmin() || isCloudFunction();
       
-      // Cloud Functions can write (for FCM token, notifications enabled, etc.)
+      // Cloud Functions can write (for FCM token, notifications enabled, OTP resend throttling, etc.)
       allow write: if isCloudFunction();
       
       // Notifications subcollection
