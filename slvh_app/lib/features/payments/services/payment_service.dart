@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:slvh_app/features/payments/models/payment_model.dart';
+import 'package:slvh_app/features/payments/services/payment_screenshot_validator.dart';
 import 'package:slvh_app/features/pickup_slots/models/slot_model.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 
@@ -76,6 +77,7 @@ class PaymentService {
   }
 
   /// Upload payment screenshot to Firebase Storage
+  /// Validates file format and size before uploading
   /// Returns the download URL
   Future<String> uploadPaymentScreenshot({
     required File imageFile,
@@ -83,6 +85,14 @@ class PaymentService {
     required String paymentId,
   }) async {
     try {
+      // Validate screenshot before upload
+      final (isValid, validationError) = 
+          await PaymentScreenshotValidator.validateScreenshot(imageFile);
+      
+      if (!isValid) {
+        throw Exception(validationError ?? 'Invalid screenshot');
+      }
+
       // Path: payment-screenshots/{orderId}/{paymentId}.jpg
       final path = 'payment-screenshots/$orderId/$paymentId.jpg';
       final ref = _storage.ref(path);

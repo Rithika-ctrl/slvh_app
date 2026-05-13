@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:slvh_app/features/payments/services/payment_screenshot_validator.dart';
 
 /// Widget for uploading payment screenshot
 class ScreenshotUploadWidget extends StatefulWidget {
@@ -38,7 +39,7 @@ class _ScreenshotUploadWidgetState extends State<ScreenshotUploadWidget> {
     }
   }
 
-  /// Pick image from gallery
+  /// Pick image from gallery with validation and compression
   Future<void> _pickFromGallery() async {
     try {
       final pickedFile = await _imagePicker.pickImage(
@@ -48,17 +49,30 @@ class _ScreenshotUploadWidgetState extends State<ScreenshotUploadWidget> {
 
       if (pickedFile != null) {
         final file = File(pickedFile.path);
-        setState(() {
-          _selectedImage = file;
-        });
-        widget.onImageSelected(file);
+        
+        // Validate and compress the image
+        final (success, processedFile, errorMessage) = 
+            await PaymentScreenshotValidator.validateAndCompress(file);
+        
+        if (!success) {
+          // Show error dialog
+          _showValidationErrorDialog(errorMessage ?? 'Unknown validation error');
+          return;
+        }
+
+        if (processedFile != null) {
+          setState(() {
+            _selectedImage = processedFile;
+          });
+          widget.onImageSelected(processedFile);
+        }
       }
     } catch (e) {
       widget.onUploadError('Failed to pick image: $e');
     }
   }
 
-  /// Take photo with camera
+  /// Take photo with camera with validation and compression
   Future<void> _pickFromCamera() async {
     try {
       final pickedFile = await _imagePicker.pickImage(
@@ -68,14 +82,55 @@ class _ScreenshotUploadWidgetState extends State<ScreenshotUploadWidget> {
 
       if (pickedFile != null) {
         final file = File(pickedFile.path);
-        setState(() {
-          _selectedImage = file;
-        });
-        widget.onImageSelected(file);
+        
+        // Validate and compress the image
+        final (success, processedFile, errorMessage) = 
+            await PaymentScreenshotValidator.validateAndCompress(file);
+        
+        if (!success) {
+          // Show error dialog
+          _showValidationErrorDialog(errorMessage ?? 'Unknown validation error');
+          return;
+        }
+
+        if (processedFile != null) {
+          setState(() {
+            _selectedImage = processedFile;
+          });
+          widget.onImageSelected(processedFile);
+        }
       }
     } catch (e) {
       widget.onUploadError('Failed to capture image: $e');
     }
+  }
+
+  /// Show validation error dialog
+  void _showValidationErrorDialog(String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: Icon(Icons.error_outline, color: Colors.red[700], size: 32),
+        title: const Text('Invalid Image'),
+        content: Text(
+          errorMessage,
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showImageSourceDialog();
+            },
+            child: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Show image source selection bottom sheet

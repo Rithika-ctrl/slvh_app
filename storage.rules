@@ -1,0 +1,52 @@
+// Firebase Storage Rules for SLVH Smart Shop
+// Storage bucket: slvh-b707f.appspot.com
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default deny all
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Payment Screenshots: payment-screenshots/{orderId}/{paymentId}.jpg
+    // Allow authenticated users to upload their own order screenshots
+    // Validate: JPG/PNG only, max 5MB
+    match /payment-screenshots/{orderId}/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null 
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/jpeg|image/png');
+    }
+
+    // User Profile Pictures: users/{uid}/profile.jpg
+    // Allow users to upload and update their profile pictures
+    match /users/{uid}/profile.jpg {
+      allow read: if true; // Public read access to profile pictures
+      allow write: if request.auth != null 
+        && request.auth.uid == uid
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/jpeg|image/png');
+    }
+
+    // Category Images: categories/{categoryId}/image.jpg
+    // Only admin can upload/modify category images
+    match /categories/{categoryId}/image.jpg {
+      allow read: if true; // Public read access
+      allow write: if request.auth != null 
+        && request.auth.token.role == 'admin'
+        && request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType.matches('image/jpeg|image/png');
+    }
+
+    // Product Images: products/{productId}/{imageIndex}.jpg
+    // Only admin can upload/modify product images
+    match /products/{productId}/{document=**} {
+      allow read: if true; // Public read access
+      allow write: if request.auth != null 
+        && request.auth.token.role == 'admin'
+        && request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType.matches('image/jpeg|image/png');
+    }
+  }
+}
