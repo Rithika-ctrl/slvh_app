@@ -39,14 +39,24 @@ service firebase.storage {
         && request.resource.contentType.matches('image/jpeg|image/png');
     }
 
-    // Product Images: products/{productId}/{imageIndex}.jpg
-    // Only admin can upload/modify product images
+    // Product Images: product-images/{productId}/{fileName}
+    // Multiple images per product, admin only
+    match /product-images/{productId}/{document=**} {
+      allow read: if true; // Public read access to product images
+      allow write: if request.auth != null 
+        && request.auth.token.role == 'admin'
+        && request.resource.size < 3 * 1024 * 1024
+        && request.resource.contentType.matches('image/jpeg');
+    }
+
+    // Legacy: Product Images: products/{productId}/{imageIndex}.jpg
+    // Kept for backwards compatibility
     match /products/{productId}/{document=**} {
       allow read: if true; // Public read access
       allow write: if request.auth != null 
         && request.auth.token.role == 'admin'
         && request.resource.size < 3 * 1024 * 1024
-        && request.resource.contentType.matches('image/jpeg|image/png');
+        && request.resource.contentType.matches('image/jpeg');
     }
   }
 }
