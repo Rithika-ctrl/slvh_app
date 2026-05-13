@@ -481,6 +481,26 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_adminLoginKey, true);
       await prefs.setString(_adminEmailKey, email);
+
+      // Create or update admin profile in Firestore with fixed ID "admin"
+      const String adminUserId = 'admin';
+      
+      // Ensure admin user document exists with role and email
+      final adminDoc = _db.collection('users').doc(adminUserId);
+      await adminDoc.set({
+        'role': 'admin',
+        'email': email,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Save FCM token for the admin user
+      try {
+        await NotificationService().saveFCMTokenForUser(adminUserId);
+        print('✅ FCM token saved for admin user: $adminUserId');
+      } catch (e) {
+        print('⚠️ Failed to save FCM token for admin: $e');
+        // Don't throw - continue with login even if FCM fails
+      }
     } catch (e) {
       throw Exception('Failed to save admin session: ${e.toString()}');
     }

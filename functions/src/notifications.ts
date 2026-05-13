@@ -315,3 +315,182 @@ export async function retryFailedWhatsAppMessages(): Promise<void> {
     console.error('Error in retryFailedWhatsAppMessages:', error);
   }
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// FCM (Firebase Cloud Messaging) PUSH NOTIFICATIONS
+// ════════════════════════════════════════════════════════════════════════════════
+
+interface FCMNotificationParams {
+  title: string;
+  body: string;
+  orderId?: string;
+  customerId?: string;
+  [key: string]: any;
+}
+
+/**
+ * Send FCM push notification to a specific device
+ * Used for admin alerts and customer order updates
+ */
+export async function sendFCMNotification(
+  fcmToken: string,
+  params: FCMNotificationParams
+): Promise<NotificationResult> {
+  try {
+    if (!fcmToken) {
+      console.warn('FCM token is empty, cannot send notification');
+      return {
+        success: false,
+        message: 'FCM token is empty',
+        error: 'No FCM token provided',
+      };
+    }
+
+    const { title, body, orderId, customerId, ...additionalData } = params;
+
+    const message = {
+      notification: {
+        title,
+        body,
+      },
+      data: {
+        ...(orderId && { orderId }),
+        ...(customerId && { customerId }),
+        ...additionalData,
+      },
+      token: fcmToken,
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log(`FCM notification sent successfully: ${response}`);
+
+    // Log to Firestore for audit trail
+    await admin.firestore().collection('fcm_notifications_log').add({
+      fcmToken: fcmToken.substring(0, 20) + '...', // Log partial token for privacy
+      title,
+      body,
+      orderId,
+      customerId,
+      status: 'success',
+      messageId: response,
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return {
+      success: true,
+      message: 'FCM notification sent successfully',
+      messageId: response,
+    };
+  } catch (error) {
+    console.error('Error sending FCM notification:', error);
+
+    // Log error to Firestore
+    await admin.firestore().collection('fcm_notifications_log').add({
+      fcmToken: fcmToken.substring(0, 20) + '...',
+      title: params.title,
+      body: params.body,
+      orderId: params.orderId,
+      customerId: params.customerId,
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return {
+      success: false,
+      message: 'Failed to send FCM notification',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Send FCM notification to admin for new order alert
+ * Fetches admin's FCM token from users collection and sends alert
+ */
+export async function sendAdminNewOrderAlert(orderData: {
+  orderId: string;
+  customerId: string;
+  customerName?: string;
+  total?: number;
+  itemCount?: number;
+}): Promise<NotificationResult> {
+  try {
+    console.log(`Preparing admin alert for new order: ${orderData.orderId}`);
+
+    // Find admin user (user with role: "admin")
+    const adminQuery = await admin
+      .firestore()
+      .collection('users')
+      .where('role', '==', 'admin')
+      .limit(1)
+      .get();
+
+    if (adminQuery.empty) {
+      console.warn('No admin user found in database');
+      return {
+        success: false,
+        message: 'Admin user not found',
+        error: 'No user with role=admin in database',
+      };
+    }
+
+    const adminDoc = adminQuery.docs[0];
+    const adminData = adminDoc.data();
+    const adminFCMToken = adminData?.fcmToken;
+
+    if (!adminFCMToken) {
+      console.warn(`Admin user ${adminDoc.id} has no FCM token configured`);
+      return {
+        success: false,
+        message: 'Admin FCM token not configured',
+        error: 'Admin user does not have an FCM token',
+      };
+    }
+
+    console.log(`Sending new order alert to admin ${adminDoc.id}`);
+
+    // Prepare notification payload
+    const title = '🆕 New Order Received!';
+    const body = `Order ${orderData.orderId} from customer ${
+      orderData.customerName || orderData.customerId
+    } - ₹${orderData.total || 0}`;
+
+    const result = await sendFCMNotification(adminFCMToken, {
+      title,
+      body,
+      orderId: orderData.orderId,
+      customerId: orderData.customerId,
+      customerName: orderData.customerName,
+      total: String(orderData.total || 0),
+      itemCount: String(orderData.itemCount || 0),
+      notificationType: 'new_order_alert',
+    });
+
+    if (result.success) {
+      console.log(`✅ Admin alert sent for order ${orderData.orderId}`);
+    } else {
+      console.error(`❌ Failed to send admin alert for order ${orderData.orderId}`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error in sendAdminNewOrderAlert:', error);
+
+    // Log error to Firestore
+    await admin.firestore().collection('fcm_notifications_log').add({
+      orderId: orderData.orderId,
+      customerId: orderData.customerId,
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      notificationType: 'new_order_alert',
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return {
+      success: false,
+      message: 'Failed to send admin new order alert',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}

@@ -1,9 +1,71 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { sendWhatsAppNotification } from './notifications';
+import { sendAdminNewOrderAlert } from './notifications';
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
+
+/**
+ * Cloud Function: Trigger on new order creation
+ * Sends FCM push notification to admin when a new order arrives
+ * 
+ * Purpose: Alert vendor immediately of new orders to enable quick verification
+ * and order processing, preventing customer dissatisfaction from delayed response
+ */
+export const onOrderCreate = functions.firestore
+  .document('orders/{orderId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const orderData = snap.data();
+      const orderId = context.params.orderId;
+
+      console.log(`📦 New order created: ${orderId}`);
+      console.log(`   Customer: ${orderData.customerId}`);
+      console.log(`   Total: ₹${orderData.total}`);
+
+      // Get customer details for the alert message
+      const customerDoc = await admin
+        .firestore()
+        .collection('users')
+        .doc(orderData.customerId)
+        .get();
+
+      const customerName = customerDoc.data()?.name || orderData.customerId;
+
+      // Send FCM notification to admin
+      const result = await sendAdminNewOrderAlert({
+        orderId,
+        customerId: orderData.customerId,
+        customerName,
+        total: orderData.total,
+        itemCount: (orderData.items?.length || 0),
+      });
+
+      if (result.success) {
+        console.log(`✅ Admin notification sent for order ${orderId}`);
+        return {
+          success: true,
+          message: `Admin notified of new order ${orderId}`,
+          orderId,
+        };
+      } else {
+        console.error(`❌ Failed to notify admin for order ${orderId}: ${result.error}`);
+        return {
+          success: false,
+          message: `Failed to notify admin: ${result.error}`,
+          orderId,
+        };
+      }
+    } catch (error) {
+      console.error('Error in onOrderCreate:', error);
+      return {
+        success: false,
+        message: 'Error processing new order notification',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  });
 
 /**
  * Cloud Function: Trigger on order status change
