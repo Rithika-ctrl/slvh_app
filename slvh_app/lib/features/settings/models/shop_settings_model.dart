@@ -27,6 +27,9 @@ class ShopSettingsModel {
   // ── Inventory ────────────────────────────────────────────────
   final int lowStockThreshold; // Alert when stock <= this value
 
+  // ── Cancellation ─────────────────────────────────────────────
+  final int cancelWindowMinutes; // Minutes after order creation during which customer may cancel
+
   final DateTime? updatedAt;
 
   const ShopSettingsModel({
@@ -43,6 +46,7 @@ class ShopSettingsModel {
     this.holidayMode = false,
     this.orderPause = false,
     this.lowStockThreshold = 5,
+    this.cancelWindowMinutes = 30,
     this.updatedAt,
   });
 
@@ -61,6 +65,7 @@ class ShopSettingsModel {
         'holiday_mode': holidayMode,
         'order_pause': orderPause,
         'low_stock_threshold': lowStockThreshold,
+        'cancel_window_minutes': cancelWindowMinutes,
         // updatedAt is written by the service via FieldValue.serverTimestamp()
       };
 
@@ -82,6 +87,8 @@ class ShopSettingsModel {
         holidayMode: data['holiday_mode'] as bool? ?? false,
         orderPause: data['order_pause'] as bool? ?? false,
         lowStockThreshold: (data['low_stock_threshold'] as num?)?.toInt() ?? 5,
+        cancelWindowMinutes:
+            (data['cancel_window_minutes'] as num?)?.toInt() ?? 30,
         updatedAt: data['updated_at'] != null
             ? (data['updated_at'] as dynamic).toDate()
             : null,
@@ -101,6 +108,7 @@ class ShopSettingsModel {
     bool? holidayMode,
     bool? orderPause,
     int? lowStockThreshold,
+    int? cancelWindowMinutes,
     DateTime? updatedAt,
   }) =>
       ShopSettingsModel(
@@ -117,6 +125,7 @@ class ShopSettingsModel {
         holidayMode: holidayMode ?? this.holidayMode,
         orderPause: orderPause ?? this.orderPause,
         lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+        cancelWindowMinutes: cancelWindowMinutes ?? this.cancelWindowMinutes,
         updatedAt: updatedAt ?? this.updatedAt,
       );
 

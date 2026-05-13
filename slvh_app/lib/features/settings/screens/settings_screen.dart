@@ -29,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _upiQrCtrl;
   late TextEditingController _lowStockCtrl;
   late TextEditingController _minOrderValueCtrl;
+  late TextEditingController _cancelWindowCtrl;
 
   // ── State ─────────────────────────────────────────────────────
   ShopSettingsModel? _settings;
@@ -54,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _upiQrCtrl = TextEditingController();
     _lowStockCtrl = TextEditingController();
     _minOrderValueCtrl = TextEditingController();
+    _cancelWindowCtrl = TextEditingController();
     _loadSettings();
   }
 
@@ -63,6 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _upiQrCtrl.dispose();
     _lowStockCtrl.dispose();
     _minOrderValueCtrl.dispose();
+    _cancelWindowCtrl.dispose();
     super.dispose();
   }
 
@@ -99,6 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _upiQrCtrl.text = s.upiQrImage;
       _lowStockCtrl.text = s.lowStockThreshold.toString();
       _minOrderValueCtrl.text = s.minOrderValue.toStringAsFixed(2);
+      _cancelWindowCtrl.text = s.cancelWindowMinutes.toString();
     });
   }
 
@@ -125,6 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         holidayMode: _holidayMode,
         orderPause: _orderPause,
         lowStockThreshold: int.tryParse(_lowStockCtrl.text) ?? 5,
+        cancelWindowMinutes: int.tryParse(_cancelWindowCtrl.text) ?? 30,
       );
       await _service.saveSettings(updated);
       setState(() => _settings = updated);
@@ -457,6 +462,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             final n = double.tryParse(v);
                             if (n == null || n < 0) {
                               return 'Enter a valid amount (e.g., 100.00)';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+                        child: TextFormField(
+                          controller: _cancelWindowCtrl,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: InputDecoration(
+                            labelText: 'Cancellation Window (minutes)',
+                            hintText: '30',
+                            helperText:
+                                'Customers can cancel only within this many minutes of placing an order',
+                            prefixIcon: const Icon(
+                              Icons.timer_outlined,
+                              color: AppColors.orange,
+                            ),
+                            suffixText: 'min',
+                            filled: true,
+                            fillColor: AppColors.orangePale,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                  AppSpacing.inputRadius),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                  AppSpacing.inputRadius),
+                              borderSide: const BorderSide(
+                                  color: AppColors.orange, width: 1.5),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'Please enter a cancellation window';
+                            }
+                            final n = int.tryParse(v);
+                            if (n == null || n < 1) {
+                              return 'Enter a positive number of minutes (e.g., 30)';
                             }
                             return null;
                           },

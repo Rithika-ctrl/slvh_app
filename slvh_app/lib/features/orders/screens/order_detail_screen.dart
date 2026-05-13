@@ -6,6 +6,7 @@ import 'package:slvh_app/features/orders/widgets/status_badge.dart';
 import 'package:slvh_app/features/orders/widgets/cancel_order_dialog.dart';
 import 'package:slvh_app/features/payments/services/payment_rejection_service.dart';
 import 'package:slvh_app/features/payments/screens/refund_instructions_screen.dart';
+import 'package:slvh_app/features/settings/services/settings_service.dart';
 
 /// Order detail screen showing full order information and real-time status
 class OrderDetailScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final OrderService _orderService = OrderService();
+  final OrderCancellationService _cancellationService = OrderCancellationService();
   final PaymentRejectionService _paymentRejectionService =
       PaymentRejectionService();
 
@@ -89,9 +91,26 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 _buildPickupInformationCard(order),
                 const SizedBox(height: 24),
 
-                // Cancel order button (visible only when payment verification pending)
+                // Cancel order button (visible only when payment verification pending
+                // AND the cancel window is still open)
                 if (order.status == OrderStatus.paymentVerificationPending)
-                  _buildCancelOrderButton(context, order),
+                  FutureBuilder(
+                    future: SettingsService.instance.getSettings(),
+                    builder: (context, snapshot) {
+                      final cancelWindowMinutes =
+                          snapshot.data?.cancelWindowMinutes ?? 30;
+                      final canCancel = _cancellationService.canCancelOrder(
+                        order,
+                        cancelWindowMinutes: cancelWindowMinutes,
+                      );
+                      final minutesLeft = _cancellationService
+                          .minutesLeftToCancel(order,
+                              cancelWindowMinutes: cancelWindowMinutes);
+                      if (!canCancel) return const SizedBox.shrink();
+                      return _buildCancelOrderButton(
+                          context, order, minutesLeft, cancelWindowMinutes);
+                    },
+                  ),
                 
                 // Payment rejection notice (visible when payment rejected)
                 if (order.status == OrderStatus.paymentRejected)
@@ -378,7 +397,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   /// Build cancel order button
-  Widget _buildCancelOrderButton(BuildContext context, OrderModel order) {
+  Widget _buildCancelOrderButton(
+    BuildContext context,
+    OrderModel order,
+    int minutesLeft,
+    int cancelWindowMinutes,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.red[50],
@@ -409,7 +433,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'You can cancel this order before the vendor starts preparation.',
+                  minutesLeft > 1
+                      ? 'You can cancel this order within the next $minutesLeft minutes '
+                          '(within $cancelWindowMinutes min of placing it).'
+                      : 'Last chance — cancel this order now before the window closes.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[700],
@@ -447,19 +474,45 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   /// Show cancel order confirmation dialog
   Future<void> _showCancelOrderDialog(BuildContext context, OrderModel order) async {
+    // Load current settings to enforce the live cancel_window_minutes
+    final settings = await SettingsService.instance.getSettings();
+    final cancelWindowMinutes = settings.cancelWindowMinutes;
+
+    // Guard: check eligibility before opening the dialog
+    if (!_cancellationService.canCancelOrder(
+      order,
+      cancelWindowMinutes: cancelWindowMinutes,
+    )) {
+      if (!mounted) return;
+      final isStatusOk =
+          order.status == OrderStatus.paymentVerificationPending;
+      final msg = isStatusOk
+          ? 'The $cancelWindowMinutes-minute cancellation window has closed. '
+              'Please contact support if you need to cancel.'
+          : 'This order can no longer be cancelled.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Colors.orange[700],
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     final result = await showCancelOrderDialog(
       context,
       order: order,
       onCancel: () {
-        // Trigger cancellation (fire-and-forget). Detailed reason is returned by the dialog.
-        OrderService().cancelOrder(order.id);
+        // Trigger cancellation via OrderCancellationService (fire-and-forget).
+        _cancellationService.cancelOrder(
+          orderId: order.id,
+          order: order,
+          reason: '',               // Reason is passed back via dialog result; service re-records it
+          cancelWindowMinutes: cancelWindowMinutes,
+        );
       },
-      cancellationReasons: [
-        'Ordered by mistake',
-        'Found cheaper elsewhere',
-        'Delivery time too long',
-        'Other',
-      ],
+      cancellationReasons: OrderCancellationService.cancellationReasons,
     );
 
     if (result != null && result['cancelled'] == true && mounted) {

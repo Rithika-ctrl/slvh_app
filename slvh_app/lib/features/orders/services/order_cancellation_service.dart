@@ -1,17 +1,39 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 import 'package:slvh_app/features/pickup_slots/services/slot_service.dart';
+import 'package:slvh_app/features/settings/services/settings_service.dart';
 
 /// Service for handling order cancellations
 /// Allows customers to cancel orders with payment_verification_pending status
-/// Restores stock when order is cancelled
+/// only if the order was placed within the configurable cancel_window_minutes.
+/// Restores stock when order is cancelled.
 class OrderCancellationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Check if an order can be cancelled by the customer
-  /// Only orders with status 'paymentVerificationPending' can be cancelled
-  bool canCancelOrder(OrderModel order) {
-    return order.status == OrderStatus.paymentVerificationPending;
+  /// Check if an order can be cancelled by the customer.
+  ///
+  /// Rules:
+  ///   1. Status must be [OrderStatus.paymentVerificationPending].
+  ///   2. The order must have been created within the last
+  ///      [cancelWindowMinutes] minutes.
+  ///
+  /// Pass [cancelWindowMinutes] from the loaded [ShopSettingsModel] so
+  /// this check is always consistent with the current admin configuration.
+  bool canCancelOrder(OrderModel order, {required int cancelWindowMinutes}) {
+    if (order.status != OrderStatus.paymentVerificationPending) return false;
+
+    final cutoff = order.createdAt.add(
+      Duration(minutes: cancelWindowMinutes),
+    );
+    return DateTime.now().isBefore(cutoff);
+  }
+
+  /// Returns how many minutes the customer has left to cancel, or 0 if
+  /// the window has already closed.  Useful for showing a countdown in the UI.
+  int minutesLeftToCancel(OrderModel order, {required int cancelWindowMinutes}) {
+    final cutoff = order.createdAt.add(Duration(minutes: cancelWindowMinutes));
+    final remaining = cutoff.difference(DateTime.now()).inMinutes;
+    return remaining < 0 ? 0 : remaining;
   }
 
   /// Get cancellation reason options
@@ -26,18 +48,30 @@ class OrderCancellationService {
     'Other',
   ];
 
-  /// Cancel an order (customer-initiated cancellation)
+  /// Cancel an order (customer-initiated cancellation).
+  ///
+  /// [cancelWindowMinutes] must be passed from the current [ShopSettingsModel]
+  /// so the time-window check uses the live admin configuration.
+  ///
   /// - Updates order status to 'cancelled'
   /// - Restores stock for all items
   /// - Records cancellation reason
-  /// Returns true if successful
+  /// Returns true if successful.
   Future<bool> cancelOrder({
     required String orderId,
     required OrderModel order,
     required String reason,
+    required int cancelWindowMinutes,
   }) async {
-    // Validate that order can be cancelled
-    if (!canCancelOrder(order)) {
+    // Validate that order can be cancelled (status + time-window check)
+    if (!canCancelOrder(order, cancelWindowMinutes: cancelWindowMinutes)) {
+      final windowClosed = order.status == OrderStatus.paymentVerificationPending;
+      if (windowClosed) {
+        throw Exception(
+          'Cancellation window has expired. Orders can only be cancelled '
+          'within $cancelWindowMinutes minutes of placing them.',
+        );
+      }
       throw Exception(
         'Order cannot be cancelled. Only pending payment verification orders can be cancelled.',
       );
