@@ -6,8 +6,45 @@ import 'package:slvh_app/features/cart/widgets/cart_item_tile.dart';
 import 'package:slvh_app/features/cart/widgets/cart_summary.dart';
 
 /// Main shopping cart screen
-class CartScreen extends StatelessWidget {
+/// Feature 8: Monitors product stock in real-time
+class CartScreen extends StatefulWidget {
   const CartScreen({Key? key}) : super(key: key);
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize stock monitoring when cart screen opens
+    Future.delayed(Duration.zero, _initializeStockMonitoring);
+  }
+
+  Future<void> _initializeStockMonitoring() async {
+    if (!mounted) return;
+    final cartProvider = context.read<CartProvider>();
+    await cartProvider.initializeStockMonitoring();
+  }
+
+  @override
+  void dispose() {
+    // Cleanup listeners when cart screen closes
+    final cartProvider = context.read<CartProvider>();
+    cartProvider.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _CartScreenBody();
+  }
+}
+
+/// Actual cart screen body (using Consumer)
+class _CartScreenBody extends StatelessWidget {
+  const _CartScreenBody();
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +99,14 @@ class CartScreen extends StatelessWidget {
                   itemCount: cartProvider.itemCount,
                   itemBuilder: (context, index) {
                     final item = cartProvider.items[index];
+                    final isOutOfStock = cartProvider.isItemOutOfStock(item.productId);
+                    final isLowStock = cartProvider.isItemLowStock(item.productId);
+
                     return CartItemTile(
                       item: item,
                       cartProvider: cartProvider,
+                      isOutOfStock: isOutOfStock,
+                      isLowStock: isLowStock,
                     );
                   },
                 ),

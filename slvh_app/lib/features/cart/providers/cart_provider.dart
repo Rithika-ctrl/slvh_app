@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slvh_app/features/cart/models/cart_item_model.dart';
 import 'package:slvh_app/features/cart/services/cart_service.dart';
+import 'package:slvh_app/features/cart/services/out_of_stock_handler.dart';
 import 'package:slvh_app/features/products/models/pricing_tier_model.dart';
 import 'package:slvh_app/features/products/models/product_model.dart';
 import 'package:slvh_app/features/products/services/pricing_service.dart';
@@ -11,12 +12,19 @@ import 'package:slvh_app/features/products/services/product_service.dart';
 /// Provider for managing shopping cart state
 /// Handles add, remove, update operations
 /// Persists to both SharedPreferences (local) and Firestore (cloud)
+/// Feature 8: Monitors product stock in real-time and alerts on out-of-stock
 class CartProvider extends ChangeNotifier {
   final List<CartItemModel> _items = [];
   final PricingService _pricingService = PricingService();
   final ProductService _productService = ProductService();
   final CartService _cartService = CartService();
+  final OutOfStockHandler _outOfStockHandler = OutOfStockHandler();
+  
   SharedPreferences? _prefs;
+  
+  // Track out-of-stock items
+  final Set<String> _outOfStockItems = {};
+  final Set<String> _lowStockItems = {};
 
   CartProvider() {
     _init();
@@ -68,7 +76,77 @@ class CartProvider extends ChangeNotifier {
   /// Check if cart is empty
   bool get isEmpty => _items.isEmpty;
 
-  /// Add product to cart
+  /// Get out-of-stock item IDs
+  Set<String> get outOfStockItems => Set.unmodifiable(_outOfStockItems);
+
+  /// Get low-stock item IDs (below 5 units)
+  Set<String> get lowStockItems => Set.unmodifiable(_lowStockItems);
+
+  /// Check if a specific item is out of stock
+  bool isItemOutOfStock(String productId) {
+    return _outOfStockItems.contains(productId);
+  }
+
+  /// Check if a specific item is low on stock
+  bool isItemLowStock(String productId) {
+    return _lowStockItems.contains(productId);
+  }
+
+  /// Initialize real-time stock monitoring for cart items
+  /// Feature 8: Monitor product stock and alert on out-of-stock
+  Future<void> initializeStockMonitoring() async {
+    if (_items.isEmpty) {
+      print('ℹ️ Cart is empty, skipping stock monitoring');
+      return;
+    }
+
+    final productIds = _items.map((item) => item.productId).toList();
+    
+    await _outOfStockHandler.initializeStockMonitoring(
+      productIds: productIds,
+      onStockChanged: _handleStockChange,
+    );
+
+    print('✅ Stock monitoring initialized for ${productIds.length} cart items');
+  }
+
+  /// Handle stock change for a product
+  void _handleStockChange(String productId, int newStock) {
+    final wasOutOfStock = _outOfStockItems.contains(productId);
+    final isNowOutOfStock = newStock == 0;
+
+    if (isNowOutOfStock && !wasOutOfStock) {
+      // Item just went out of stock
+      _outOfStockItems.add(productId);
+      _lowStockItems.remove(productId);
+      print('🔴 OUT OF STOCK: $productId');
+      notifyListeners();
+    } else if (!isNowOutOfStock && wasOutOfStock) {
+      // Item is back in stock
+      _outOfStockItems.remove(productId);
+      print('🟢 BACK IN STOCK: $productId with $newStock units');
+      notifyListeners();
+    } else if (newStock > 0 && newStock <= 5) {
+      // Low stock warning
+      _lowStockItems.add(productId);
+      print('🟡 LOW STOCK: $productId ($newStock units)');
+      notifyListeners();
+    } else if (newStock > 5) {
+      // Stock is sufficient again
+      _lowStockItems.remove(productId);
+      notifyListeners();
+    }
+  }
+
+  /// Remove out-of-stock item from cart
+  Future<void> removeOutOfStockItem(String productId) async {
+    await removeItem(productId);
+    _outOfStockHandler.removeListener(productId);
+    _outOfStockItems.remove(productId);
+    print('✅ Removed out-of-stock item: $productId');
+  }
+
+  /// Add item to cart
   /// Respects product.maxOrderQty limit (silently caps quantity)
   Future<void> addToCart(
     ProductModel product, {
@@ -285,6 +363,16 @@ class CartProvider extends ChangeNotifier {
       'total': total,
       'items': exportCartItems(),
     };
+  }
+
+  /// Cleanup: Dispose stock monitoring listeners
+  /// Call this when the cart screen is disposed
+  @override
+  void dispose() {
+    _outOfStockHandler.dispose();
+    _outOfStockItems.clear();
+    _lowStockItems.clear();
+    super.dispose();
   }
 }
 
