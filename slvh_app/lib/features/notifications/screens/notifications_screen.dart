@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:slvh_app/shared/widgets/empty_state_widget.dart';
 import 'package:slvh_app/features/notifications/models/notification_model.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
 
@@ -70,31 +71,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.notifications_off_outlined,
-            size: 64,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No notifications',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You will receive notifications when your orders are updated',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[500],
-                ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+    return EmptyStateWidget(
+      icon: Icons.notifications_off_outlined,
+      title: 'No notifications',
+      subtitle: 'You will receive notifications when your orders are updated',
       ),
     );
   }

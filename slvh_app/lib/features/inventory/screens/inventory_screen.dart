@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:slvh_app/features/inventory/services/inventory_service.dart';
 import 'package:slvh_app/features/inventory/widgets/stock_indicator.dart';
 import 'package:slvh_app/features/products/models/product_model.dart';
+import 'package:slvh_app/shared/widgets/empty_state_widget.dart';
 
 /// Admin inventory management screen
 class InventoryScreen extends StatefulWidget {
@@ -77,13 +78,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
         if (products.isEmpty) {
           return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
-                SizedBox(height: 16),
-                Text('No products found'),
-              ],
+            child: const EmptyStateWidget(
+              icon: Icons.inbox_outlined,
+              title: 'No products found',
+              subtitle: 'Add products to start managing inventory.',
+              fullHeight: false,
             ),
           );
         }

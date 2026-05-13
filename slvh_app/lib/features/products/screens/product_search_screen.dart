@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../models/product_model.dart';
 import '../services/product_service.dart';
@@ -223,27 +224,11 @@ class _ProductSearchScreenState extends State<ProductSearchScreen> {
                     final products = snapshot.data ?? [];
 
                     if (products.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.shopping_bag_outlined,
-                              size: 48,
-                              color: AppColors.orange.withOpacity(0.3),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No products found for "$_searchQuery"',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textDark.withOpacity(0.6),
-                              ),
-                            ),
-                          ],
-                        ),
+                      return EmptyStateWidget(
+                        icon: Icons.shopping_bag_outlined,
+                        title: 'No products found',
+                        subtitle: 'No results for "$_searchQuery"',
+                        iconColor: AppColors.orange.withOpacity(0.35),
                       );
                     }
 

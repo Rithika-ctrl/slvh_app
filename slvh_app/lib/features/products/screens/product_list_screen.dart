@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../categories/models/category_model.dart';
 import '../../categories/services/category_service.dart';
@@ -306,34 +307,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   /// Empty state widget
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            _searchQuery.isEmpty ? '📦' : '🔍',
-            style: const TextStyle(fontSize: 48),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _searchQuery.isEmpty
-                ? 'No products found'
-                : 'No products matching "$_searchQuery"',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Try adjusting your search or filters',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textHint,
-            ),
-          ),
-        ],
+    return EmptyStateWidget(
+      icon: _searchQuery.isEmpty ? Icons.shopping_bag_outlined : Icons.search_off_outlined,
+      title: _searchQuery.isEmpty ? 'No products found' : 'No products matching "$_searchQuery"',
+      subtitle: 'Try adjusting your search or filters',
+      iconColor: AppColors.orange.withOpacity(0.35),
       ),
     );
   }

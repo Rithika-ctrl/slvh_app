@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 import 'package:slvh_app/features/orders/services/order_service.dart';
 import 'package:slvh_app/features/orders/widgets/status_badge.dart';
+import 'package:slvh_app/shared/widgets/empty_state_widget.dart';
 
 /// Order history screen showing all customer orders
 class OrderHistoryScreen extends StatefulWidget {
@@ -145,28 +146,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   /// Build empty state
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(
-            'No orders yet',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start shopping to create your first order',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.shopping_bag),
-            label: const Text('Start Shopping'),
-          ),
-        ],
+    return EmptyStateWidget(
+      icon: Icons.shopping_bag_outlined,
+      title: 'No orders yet',
+      subtitle: 'Start shopping to create your first order',
+      actionButton: ElevatedButton.icon(
+        onPressed: () => Navigator.pop(context),
+        icon: const Icon(Icons.shopping_bag),
+        label: const Text('Start Shopping'),
+      ),
       ),
     );
   }

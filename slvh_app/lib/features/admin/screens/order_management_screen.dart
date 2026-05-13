@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../shared/widgets/empty_state_widget.dart';
 import '../../orders/models/order_model.dart';
 import '../widgets/order_row.dart';
 
@@ -550,24 +551,19 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
   }
 
   Widget _buildEmptyState(String message) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inbox_outlined,
-              size: 56, color: AppColors.textHint),
-          const SizedBox(height: 12),
-          Text(message,
-              style: TextStyle(
-                  color: AppColors.textMuted, fontSize: 16)),
-          if (_hasActiveFilters) ...[
-            const SizedBox(height: 12),
-            TextButton(
+    return EmptyStateWidget(
+      icon: Icons.inbox_outlined,
+      title: message,
+      subtitle: _hasActiveFilters
+          ? 'Try clearing your filters to see more orders.'
+          : 'New orders will appear here.',
+      iconColor: AppColors.textHint,
+      actionButton: _hasActiveFilters
+          ? TextButton(
               onPressed: _clearFilters,
               child: const Text('Clear filters'),
-            ),
-          ],
-        ],
+            )
+          : null,
       ),
     );
   }

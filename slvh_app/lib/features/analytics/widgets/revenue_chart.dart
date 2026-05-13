@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../shared/widgets/empty_state_widget.dart';
 
 enum RevenueGrouping { day, week, month }
 
@@ -262,24 +263,11 @@ class _RevenueChartState extends State<RevenueChart> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.show_chart, size: 44, color: AppColors.textHint),
-          const SizedBox(height: 10),
-          Text(
-            'No revenue data yet',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            'Completed orders will appear here.',
-            style: TextStyle(color: AppColors.textHint, fontSize: 13),
-          ),
-        ],
+    return const EmptyStateWidget(
+      icon: Icons.show_chart,
+      title: 'No revenue data yet',
+      subtitle: 'Completed orders will appear here.',
+      fullHeight: false,
       ),
     );
   }

@@ -29,6 +29,7 @@ import '../features/profile/screens/profile_screen.dart';
 import '../features/products/screens/product_list_screen.dart';
 import '../features/products/screens/product_detail_screen.dart';
 import '../features/cart/screens/cart_screen.dart';
+import '../shared/widgets/empty_state_widget.dart';
 
 class AppRoutes {
   static const String phoneInput = '/';
@@ -270,7 +271,7 @@ class AppRouter {
                 final loadedProduct = snapshot.data;
                 if (loadedProduct == null) {
                   return const Scaffold(
-                    body: Center(child: Text('Product not found')),
+                    body: const NotFoundWidget(itemName: 'Product'),
                   );
                 }
 
@@ -314,7 +315,7 @@ class AppRouter {
             final cartSummary = state.extra as Map<String, dynamic>?;
             if (cartSummary == null) {
               return const Scaffold(
-                body: Center(child: Text('Cart data not found')),
+                body: const NotFoundWidget(itemName: 'Cart'),
               );
             }
             return CheckoutScreen(cartSummary: cartSummary);
@@ -367,7 +368,7 @@ class AppRouter {
             final order = state.extra as OrderModel?;
             if (order == null) {
               return const Scaffold(
-                body: Center(child: Text('Order data not found')),
+                body: const NotFoundWidget(itemName: 'Order'),
               );
             }
             return OrderSummaryScreen(
@@ -381,21 +382,9 @@ class AppRouter {
 
       // Fallback for unknown routes
       errorBuilder: (context, state) => Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Page not found',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go(AppRoutes.phoneInput),
-                child: const Text('Go to Login'),
-              ),
-            ],
-          ),
+        body: NotFoundWidget(
+          itemName: 'Page',
+          onGoBack: () => context.go(AppRoutes.phoneInput),
         ),
       ),
     );
@@ -439,10 +428,7 @@ class AppRouter {
       default:
         return MaterialPageRoute(
           builder: (_) => const Scaffold(
-            body: Center(
-              child:
-                  Text('Page not found', style: TextStyle(color: Colors.white)),
-            ),
+            body: NotFoundWidget(itemName: 'Page'),
           ),
         );
     }
