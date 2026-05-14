@@ -37,14 +37,18 @@ class CartService {
 
   /// Save cart items — works online AND offline.
   ///
-  /// Online:  writes straight to Firestore (original behaviour, unchanged)
+  /// Online:  writes straight to Firestore (original behaviour, unchanged).
   /// Offline: serialises the cart into a PendingWrite and stores it in Hive.
   ///          The queue auto-replays when connectivity is restored.
-  Future<void> saveCart(List<CartItemModel> items) async {
+  ///
+  /// Returns `true` on success. Returns `false` if:
+  ///   • online write threw (non-fatal — local cache still intact)
+  ///   • offline queue write failed to verify (caller should warn user)
+  Future<bool> saveCart(List<CartItemModel> items) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) {
       print('⚠️ User not authenticated, skipping cart save');
-      return;
+      return false;
     }
 
     final payload = {
@@ -64,24 +68,32 @@ class CartService {
             .doc('data')
             .set(payload);
         print('✅ Cart saved to Firestore (${items.length} items)');
+        return true;
       } catch (e) {
         print('❌ Failed to save cart to Firestore: $e');
-        // Don't throw — local cart (SharedPreferences) still works
+        return false; // local cart (SharedPreferences) still works
       }
     } else {
-      // ── Offline path — queue for later ──────────────────────────────
-      await PendingWriteQueue.instance.enqueue(PendingWrite(
-        id: _uuid.v4(),
-        collection: 'users',
-        docId: userId,
-        subCollection: 'cart',
-        subDocId: 'data',
-        data: payload,
-        operation: PendingWriteOp.set,
-        createdAt: DateTime.now(),
-        merge: false, // overwrite the cart, not merge
-      ));
-      print('📥 Cart queued offline (${items.length} items) — will sync when online');
+      // ── Offline path — queue with verification ───────────────────────
+      final queued = await PendingWriteQueue.instance.enqueueWithConfirmation(
+        PendingWrite(
+          id: _uuid.v4(),
+          collection: 'users',
+          docId: userId,
+          subCollection: 'cart',
+          subDocId: 'data',
+          data: payload,
+          operation: PendingWriteOp.set,
+          createdAt: DateTime.now(),
+          merge: false, // overwrite the cart, not merge
+        ),
+      );
+      if (queued) {
+        print('📥 Cart queued offline (${items.length} items) — will sync when online');
+      } else {
+        print('❌ Cart offline queue FAILED — write may be lost');
+      }
+      return queued;
     }
   }
 

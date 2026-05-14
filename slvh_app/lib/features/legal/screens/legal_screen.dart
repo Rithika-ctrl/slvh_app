@@ -21,12 +21,17 @@ class _LegalScreenState extends State<LegalScreen> {
   bool _hasError = false;
 
   // ── URLs ─────────────────────────────────────────────────────────────────
-  // Update these to your Firebase Hosting project URL after deployment.
-  // Example: https://your-project-id.web.app/privacy-policy
+  // TODO: Replace YOUR_PROJECT_ID with your actual Firebase project ID.
+  // 1. Find your project ID in the Firebase Console → Project Settings.
+  // 2. Deploy the HTML pages:  firebase deploy --only hosting
+  // 3. Update the two constants below, then hot-restart the app.
+  // ─────────────────────────────────────────────────────────────────────────
+  static const String _firebaseProjectId = 'YOUR_PROJECT_ID'; // ← change this
+
   static const String _privacyPolicyUrl =
-      'https://YOUR_PROJECT_ID.web.app/privacy-policy';
+      'https://$_firebaseProjectId.web.app/privacy-policy';
   static const String _termsUrl =
-      'https://YOUR_PROJECT_ID.web.app/terms-of-service';
+      'https://$_firebaseProjectId.web.app/terms-of-service';
 
   String get _url => widget.docType == LegalDocType.privacyPolicy
       ? _privacyPolicyUrl

@@ -76,6 +76,48 @@ class PendingWriteQueue {
     });
   }
 
+  /// Add a write to the queue and **verify** it was persisted.
+  ///
+  /// Returns `true` if the write was successfully stored in Hive.
+  /// Returns `false` if the queue was not initialised or the Hive write
+  /// failed (e.g. disk full). Callers should surface an error to the user
+  /// when this returns `false` so the change is not silently lost.
+  ///
+  /// Use this instead of [enqueue] for cart saves and order-related writes
+  /// where silent data loss is unacceptable.
+  Future<bool> enqueueWithConfirmation(PendingWrite write) async {
+    final box = _box;
+    if (box == null) {
+      print('⚠️ PendingWriteQueue not initialised — write dropped: ${write.path}');
+      return false;
+    }
+
+    try {
+      await box.put(write.id, jsonEncode(write.toJson()));
+
+      // Verify the entry was actually persisted
+      final stored = box.get(write.id);
+      if (stored == null) {
+        print('❌ Verification failed — write not found after put: ${write.id}');
+        return false;
+      }
+
+      print('📥 Queued+verified write [${write.id}] → ${write.path} '
+          '(queue depth: ${box.length})');
+
+      if (ConnectivityService.instance.isOnline) {
+        unawaited(flush());
+      }
+      return true;
+    } catch (e) {
+      print('❌ Failed to queue write [${write.id}] → ${write.path}: $e');
+      return false;
+    }
+  }
+
+  /// Returns true if a specific write ID is still pending (not yet flushed).
+  bool isPending(String writeId) => _box?.containsKey(writeId) ?? false;
+
   /// Add a write to the persistent queue.
   /// Safe to call when offline — the write will survive app restarts.
   Future<void> enqueue(PendingWrite write) async {
