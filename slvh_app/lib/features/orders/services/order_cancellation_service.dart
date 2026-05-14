@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:slvh_app/features/inventory/services/stock_service.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 import 'package:slvh_app/features/pickup_slots/services/slot_service.dart';
 
@@ -8,6 +9,7 @@ import 'package:slvh_app/features/pickup_slots/services/slot_service.dart';
 class OrderCancellationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final SlotService _slotService = SlotService();
+  final StockService _stockService = StockService();
 
   /// Check if an order can be cancelled by the customer.
   /// Only orders with status 'paymentVerificationPending' can be cancelled.
@@ -73,19 +75,22 @@ class OrderCancellationService {
         'updatedAt': now,
       });
 
-      // 2. Restore stock for each item
-      for (final item in order.items) {
-        final productRef =
-            _firestore.collection('products').doc(item.productId);
-        batch.update(productRef, {
-          'stock': FieldValue.increment(item.quantity),
-        });
-      }
-
-      // 3. Commit batch atomically
+      // 2. Commit order status update atomically
       await batch.commit();
 
-      // 4. Cancel slot booking (decrements count) - outside batch as it uses its own transaction
+      // 3. Restore stock for each item atomically via StockService transactions
+      for (final item in order.items) {
+        try {
+          await _stockService.releaseStock(item.productId, item.quantity);
+          print('✅ Stock restored: +${item.quantity} for ${item.productId}');
+        } catch (e) {
+          print('⚠️ Warning: Failed to restore stock for ${item.productId}: $e');
+          // Log but continue — order is already cancelled; partial stock restore
+          // is better than blocking the cancellation entirely.
+        }
+      }
+
+      // 4. Cancel slot booking (decrements count) - uses its own transaction
       try {
         final pickupDate = DateTime.parse(order.pickupDate);
         await _slotService.cancelSlotBooking(pickupDate, order.pickupSlotId);

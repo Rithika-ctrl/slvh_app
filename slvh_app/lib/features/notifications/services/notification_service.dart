@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slvh_app/features/notifications/models/notification_model.dart';
 
 /// Top-level background message handler
@@ -56,6 +57,25 @@ class NotificationService {
       // Get FCM token and save to Firestore
       await _saveFCMToken();
 
+      // Re-save token whenever FCM rotates it (important for delivery reliability)
+      _fcm.onTokenRefresh.listen((newToken) async {
+        print('🔄 FCM token refreshed — re-saving for current user');
+        // saveFCMTokenForUser is called again by the auth layer on next login.
+        // For already-logged-in users we re-save here directly.
+        try {
+          final uid = await _getCurrentUserId();
+          if (uid != null) {
+            await _firestore.collection('users').doc(uid).set(
+              {'fcmToken': newToken, 'updatedAt': DateTime.now()},
+              SetOptions(merge: true),
+            );
+            print('✅ Refreshed FCM token saved for user: $uid');
+          }
+        } catch (e) {
+          print('⚠️ Failed to save refreshed FCM token: $e');
+        }
+      });
+
       // Set up foreground message handler
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
@@ -98,30 +118,15 @@ class NotificationService {
     );
   }
 
-  /// Save FCM token to Firestore user document
+  /// Save FCM token to Firestore user document.
+  /// NOTE: This is intentionally a no-op at startup because we don't have a
+  /// user ID yet. The token is saved to the correct `users/{uid}` document
+  /// by [saveFCMTokenForUser] immediately after the user/admin logs in.
   Future<void> _saveFCMToken() async {
-    try {
-      final token = await _fcm.getToken();
-      if (token != null) {
-        print('FCM Token: $token');
-
-        // Get current user UID from SharedPreferences or Auth
-        // For now, we'll save to a temp location
-        // In production, save after user logs in:
-        // await _firestore.collection('users').doc(uid).update({
-        //   'fcmToken': token,
-        //   'updatedAt': DateTime.now(),
-        // });
-
-        // Store for later when user logs in
-        await _firestore
-            .collection('app_settings')
-            .doc('fcm_tokens')
-            .set({'temp_token': token}, SetOptions(merge: true));
-      }
-    } catch (e) {
-      print('❌ Failed to save FCM token: $e');
-    }
+    // Token is written in saveFCMTokenForUser() post-login.
+    // Cloud Function reads fcmToken from users/{uid}, so do not write to any
+    // other path here (e.g. app_settings/fcm_tokens) as it won't be read.
+    print('ℹ️ FCM token will be saved after login via saveFCMTokenForUser()');
   }
 
   /// Save FCM token for authenticated user
@@ -400,6 +405,21 @@ class NotificationService {
       print('✅ Notifications disabled for user: $userId');
     } catch (e) {
       print('❌ Failed to disable notifications: $e');
+    }
+  }
+
+  /// Returns the UID of the currently logged-in user (customer phone or 'admin'),
+  /// or null if nobody is logged in.  Mirrors the keys used by AuthService.
+  Future<String?> _getCurrentUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isAdmin = prefs.getBool('admin_logged_in') ?? false;
+      if (isAdmin) return 'admin';
+      final isUser = prefs.getBool('user_logged_in') ?? false;
+      if (isUser) return prefs.getString('user_phone_number');
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 }
