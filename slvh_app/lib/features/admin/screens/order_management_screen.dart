@@ -564,7 +564,6 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
               child: const Text('Clear filters'),
             )
           : null,
-      ),
     );
   }
 }

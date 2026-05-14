@@ -256,7 +256,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         const SizedBox(height: 28),
 
                         // ── Quantity Selector ──────────────────────────
-                        _buildQuantitySelector(),
+                        _buildQuantitySelector(product),
 
                         // ── Max Order Qty Warning ──────────────────────
                         if (product.maxOrderQty != null)
@@ -478,7 +478,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
   }
 
   /// Build quantity selector
-  Widget _buildQuantitySelector() {
+  Widget _buildQuantitySelector(ProductModel product) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(

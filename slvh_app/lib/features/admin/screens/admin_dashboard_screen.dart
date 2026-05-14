@@ -159,6 +159,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 onPressed: () => context.push('/admin/banners'),
               ),
               _QuickActionButton(
+                icon: Icons.category_outlined,
+                label: 'Categories',
+                onPressed: () => context.push('/admin/categories'),
+              ),
+              _QuickActionButton(
                 icon: Icons.refresh,
                 label: 'Refresh',
                 onPressed: () {

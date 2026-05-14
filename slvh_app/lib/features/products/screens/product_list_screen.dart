@@ -312,7 +312,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
       title: _searchQuery.isEmpty ? 'No products found' : 'No products matching "$_searchQuery"',
       subtitle: 'Try adjusting your search or filters',
       iconColor: AppColors.orange.withOpacity(0.35),
-      ),
     );
   }
 }

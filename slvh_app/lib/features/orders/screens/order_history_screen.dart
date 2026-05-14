@@ -155,7 +155,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         icon: const Icon(Icons.shopping_bag),
         label: const Text('Start Shopping'),
       ),
-      ),
     );
   }
 }

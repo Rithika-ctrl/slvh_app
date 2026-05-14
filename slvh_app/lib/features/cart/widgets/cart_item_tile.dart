@@ -165,146 +165,148 @@ class CartItemTile extends StatelessWidget {
                               '₹${item.getEffectivePrice().toStringAsFixed(2)}/unit',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Colors.orange[700],
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        if (savings > 0) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.red[50],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Save ${savings.toStringAsFixed(1)}%',
-                              style: TextStyle(
-                                color: Colors.red[700],
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Total price
-                    Text(
-                      'Total: ₹${item.getTotalPrice().toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange[700],
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Quantity controls or remove button
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (isOutOfStock)
-                    // Remove button for out-of-stock items
-                    GestureDetector(
-                      onTap: () async {
-                        final shouldRemove = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Remove Item?'),
-                            content: Text(
-                              '${item.productName} is out of stock. Remove from cart?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Keep'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red[700],
+                            if (savings > 0) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
                                 ),
-                                child: const Text('Remove'),
+                                decoration: BoxDecoration(
+                                  color: Colors.red[50],
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Save ${savings.toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    color: Colors.red[700],
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ],
-                          ),
-                        );
+                          ],
+                        ),
+                        const SizedBox(height: 8),
 
-                        if (shouldRemove == true) {
-                          await cartProvider.removeOutOfStockItem(item.productId);
-                          onRemove?.call();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${item.productName} removed from cart'),
-                                duration: const Duration(seconds: 2),
+                        // Total price
+                        Text(
+                          'Total: ₹${item.getTotalPrice().toStringAsFixed(2)}',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange[700],
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Quantity controls or remove button
+                  Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (isOutOfStock)
+                        // Remove button for out-of-stock items
+                        GestureDetector(
+                          onTap: () async {
+                            final shouldRemove = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Remove Item?'),
+                                content: Text(
+                                  '${item.productName} is out of stock. Remove from cart?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Keep'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red[700],
+                                    ),
+                                    child: const Text('Remove'),
+                                  ),
+                                ],
                               ),
                             );
-                          }
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+    
+                            if (shouldRemove == true) {
+                              await cartProvider.removeOutOfStockItem(item.productId);
+                              onRemove?.call();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('${item.productName} removed from cart'),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red[100],
+                              border: Border.all(color: Colors.red[700]!),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Icon(
+                              Icons.delete_outline,
+                              color: Colors.red[700],
+                              size: 18,
+                            ),
+                          ),
+                        )
+                      else
+                        // Quantity control for in-stock items
+                        _QuantityControl(
+                          quantity: item.quantity,
+                          onIncrement: () async {
+                            await cartProvider.updateQuantity(
+                              item.productId,
+                              item.quantity + 1,
+                            );
+                          },
+                          onDecrement: () async {
+                            if (item.quantity > 1) {
+                              await cartProvider.updateQuantity(
+                                item.productId,
+                                item.quantity - 1,
+                              );
+                            }
+                          },
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.red[100],
-                          border: Border.all(color: Colors.red[700]!),
-                          borderRadius: BorderRadius.circular(4),
+                      const SizedBox(height: 8),
+                      if (item.selectedTier != null && !isOutOfStock)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '${item.selectedTier!.unit}',
+                            style: TextStyle(
+                              color: Colors.blue[700],
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                        child: Icon(
-                          Icons.delete_outline,
-                          color: Colors.red[700],
-                          size: 18,
-                        ),
-                      ),
-                    )
-                  else
-                    // Quantity control for in-stock items
-                    _QuantityControl(
-                      quantity: item.quantity,
-                      onIncrement: () async {
-                        await cartProvider.updateQuantity(
-                          item.productId,
-                          item.quantity + 1,
-                        );
-                      },
-                      onDecrement: () async {
-                        if (item.quantity > 1) {
-                          await cartProvider.updateQuantity(
-                            item.productId,
-                            item.quantity - 1,
-                          );
-                        }
-                      },
-                    ),
-                  const SizedBox(height: 8),
-                  if (item.selectedTier != null && !isOutOfStock)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${item.selectedTier!.unit}',
-                        style: TextStyle(
-                          color: Colors.blue[700],
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    ],
+                  ),
                 ],
               ),
             ],

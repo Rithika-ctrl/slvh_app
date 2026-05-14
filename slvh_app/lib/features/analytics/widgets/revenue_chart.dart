@@ -268,7 +268,6 @@ class _RevenueChartState extends State<RevenueChart> {
       title: 'No revenue data yet',
       subtitle: 'Completed orders will appear here.',
       fullHeight: false,
-      ),
     );
   }
 
