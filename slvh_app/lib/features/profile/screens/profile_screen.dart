@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../auth/services/auth_service.dart';
 import '../../orders/screens/order_history_screen.dart';
-import '../../legal/screens/legal_screen.dart';          // ← NEW
+import '../../legal/screens/legal_screen.dart';
+import '../services/user_profile_service.dart';
+import '../screens/change_phone_screen.dart';
 import '../widgets/profile_header.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
+  final UserProfileService _profileService = UserProfileService();
 
   String _phone = '';
   String _name = '';
@@ -34,18 +36,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final phone = await _authService.getCurrentUserPhone() ?? '';
     String name = '';
 
-    // Load name from Firestore users/{phone}
     if (phone.isNotEmpty) {
-      try {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(phone)
-            .get();
-        name = (doc.data()?['name'] as String?) ?? '';
-      } catch (_) {}
+      name = await _profileService.fetchName(phone);
     }
 
-    // App version — update this string with each release
     const String version = 'v1.0.0';
 
     if (!mounted) return;
@@ -117,12 +111,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     setState(() => _name = saved);
 
-    // Persist to Firestore
+    // Persist to Firestore via UserProfileService (also stamps updated_at).
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_phone)
-          .set({'name': saved}, SetOptions(merge: true));
+      await _profileService.updateName(phone: _phone, name: saved);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -132,6 +123,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       }
+    }
+  }
+
+  // ── Change phone ──────────────────────────────────────────────────────────
+
+  Future<void> _changePhone() async {
+    final newPhone = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => ChangePhoneScreen(currentPhone: _phone),
+      ),
+    );
+
+    if (newPhone != null && newPhone.isNotEmpty && mounted) {
+      setState(() => _phone = newPhone);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Phone updated to $newPhone'),
+          backgroundColor: AppColors.success,
+        ),
+      );
     }
   }
 
@@ -253,6 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   color: AppColors.textHint,
                                 ),
                               ),
+                              onTap: _changePhone,
                             ),
                           ],
                         ),
