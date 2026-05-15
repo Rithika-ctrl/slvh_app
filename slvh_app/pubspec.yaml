@@ -35,6 +35,11 @@ dependencies:
   file_saver: ^0.2.8
   uuid: ^4.4.0
 
+  # ── Phase 2: Invoice / Receipt PDF ──────────────────────────────────────
+  pdf: ^3.11.1              # PDF generation
+  share_plus: ^10.0.0       # OS share sheet (share PDF / other files)
+  path_provider: ^2.1.4     # Temp directory for saving PDF before sharing
+
   # Feature 10: Privacy Policy / Terms WebView
   # Pinned to ^4.8.0 — last release compatible with Dart SDK 3.4.x
   # (4.9.0+ requires Dart >=3.5.0)

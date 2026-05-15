@@ -31,6 +31,7 @@ import '../features/products/screens/product_list_screen.dart';
 import '../features/products/screens/product_detail_screen.dart';
 import '../features/cart/screens/cart_screen.dart';
 import '../shared/widgets/empty_state_widget.dart';
+import '../features/invoice/screens/invoice_screen.dart';
 
 class AppRoutes {
   static const String phoneInput = '/';
@@ -52,6 +53,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String orderSummary = '/order-summary';
   static const String orderDetail = '/order';
+  static const String invoice = '/order';  // /order/:orderId/invoice
   static const String products = '/products';
   static const String cart = '/cart';
 }
@@ -367,6 +369,15 @@ class AppRouter {
           builder: (context, state) {
             final orderId = state.pathParameters['orderId'] ?? '';
             return OrderDetailScreen(orderId: orderId);
+          },
+        ),
+
+        GoRoute(
+          path: '${AppRoutes.orderDetail}/:orderId/invoice',
+          name: 'invoice',
+          builder: (context, state) {
+            final orderId = state.pathParameters['orderId'] ?? '';
+            return InvoiceScreen(orderId: orderId);
           },
         ),
 

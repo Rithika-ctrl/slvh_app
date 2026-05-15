@@ -7,6 +7,8 @@ import 'package:slvh_app/features/orders/widgets/cancel_order_dialog.dart';
 import 'package:slvh_app/features/payments/services/payment_rejection_service.dart';
 import 'package:slvh_app/features/payments/screens/refund_instructions_screen.dart';
 import 'package:slvh_app/features/settings/services/settings_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:slvh_app/routes/app_router.dart';
 
 /// Order detail screen showing full order information and real-time status
 class OrderDetailScreen extends StatefulWidget {
@@ -34,6 +36,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         title: const Text('Order Details'),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.receipt_long_rounded),
+            tooltip: 'View Invoice',
+            onPressed: () => context.push(
+              '${AppRoutes.orderDetail}/${widget.orderId}/invoice',
+            ),
+          ),
+        ],
       ),
       body: StreamBuilder<OrderModel?>(
         stream: _orderService.watchOrder(widget.orderId),
