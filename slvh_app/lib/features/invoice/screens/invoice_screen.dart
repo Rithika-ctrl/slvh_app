@@ -36,7 +36,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   // ── Services ─────────────────────────────────────────────────────────────
   final _orderService = OrderService();
   final _paymentService = PaymentService();
-  final _settingsService = SettingsService();
+  final _settingsService = SettingsService.instance;
   final _authService = AuthService();
   final _profileService = UserProfileService();
   final _invoiceService = InvoiceService();
@@ -65,7 +65,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   Future<void> _load() async {
     try {
       // Fetch all data in parallel
-      final results = await Future.wait([
+      final results = await Future.wait<dynamic>([
         _orderService.getOrder(widget.orderId),
         _settingsService.getSettings(),
         _authService.getCurrentUserPhone().then((p) async {
