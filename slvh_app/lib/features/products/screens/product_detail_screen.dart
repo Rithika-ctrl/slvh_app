@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../models/product_model.dart';
 import '../services/product_service.dart';
+import '../../reviews/widgets/product_reviews_section.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// Product Detail Screen
@@ -302,6 +303,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
 
                         // ── Add to Cart Button ────────────────────────
                         _buildAddToCartButton(product),
+
+                        const SizedBox(height: 28),
+
+                        // ── Ratings & Reviews ──────────────────────
+                        ProductReviewsSection(
+                          productId: product.id,
+                          avgRating: product.rating,
+                          reviewCount: product.reviewCount,
+                        ),
 
                         const SizedBox(height: 20),
                       ],

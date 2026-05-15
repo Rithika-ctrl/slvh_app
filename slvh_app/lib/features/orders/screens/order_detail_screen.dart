@@ -7,6 +7,8 @@ import 'package:slvh_app/features/orders/widgets/cancel_order_dialog.dart';
 import 'package:slvh_app/features/payments/services/payment_rejection_service.dart';
 import 'package:slvh_app/features/payments/screens/refund_instructions_screen.dart';
 import 'package:slvh_app/features/settings/services/settings_service.dart';
+import 'package:slvh_app/features/reviews/widgets/rating_dialog.dart';
+import 'package:slvh_app/features/auth/services/auth_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:slvh_app/routes/app_router.dart';
 
@@ -28,6 +30,26 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final OrderCancellationService _cancellationService = OrderCancellationService();
   final PaymentRejectionService _paymentRejectionService =
       PaymentRejectionService();
+  final AuthService _authService = AuthService();
+
+  // Ensures the rating dialog is only auto-shown once per screen visit
+  bool _ratingDialogShown = false;
+
+  /// Called whenever a new order snapshot arrives; shows the rating dialog
+  /// exactly once when the order reaches Completed status.
+  void _maybeShowRatingDialog(OrderModel order) {
+    if (_ratingDialogShown) return;
+    if (order.status != OrderStatus.completed) return;
+    _ratingDialogShown = true;
+
+    // Delay so the widget tree has settled
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final phone = await _authService.getCurrentUserPhone() ?? '';
+      if (!mounted) return;
+      await RatingDialog.show(context, order: order, userId: phone);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +89,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           }
 
           final order = snapshot.data;
+          if (order != null) _maybeShowRatingDialog(order);
           if (order == null) {
             return const Center(
               child: Text('Order not found'),
