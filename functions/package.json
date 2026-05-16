@@ -8,7 +8,9 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "seed:database": "npm run build && node lib/seed_database.js",
+    "seed:database:core": "npm run build && node lib/seed_database.js --core-only"
   },
   "engines": {
     "node": "18"

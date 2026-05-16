@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../categories/models/category_model.dart';
 import '../../categories/services/category_service.dart';
+import '../../products/services/cloudinary_upload_service.dart';
 import '../widgets/product_form.dart';
 
 class AddProductScreen extends StatefulWidget {
@@ -18,8 +18,8 @@ class AddProductScreen extends StatefulWidget {
 
 class _AddProductScreenState extends State<AddProductScreen> {
   final _firestore = FirebaseFirestore.instance;
-  final _storage = FirebaseStorage.instance;
   final _categoryService = CategoryService();
+  final _cloudinaryService = CloudinaryUploadService();
   late final Future<List<CategoryModel>> _categoriesFuture;
   bool _isSaving = false;
 
@@ -81,7 +81,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     try {
       final productRef = _firestore.collection('products').doc();
-      final imageUrls = await _uploadImages(productRef.id, data.newImages);
+      final uploadedImages = await _cloudinaryService.uploadProductImages(
+        productId: productRef.id,
+        images: data.newImages,
+      );
+      final imageUrls = [
+        ...data.existingImageUrls,
+        ...uploadedImages.map((asset) => asset.secureUrl),
+      ];
 
       await productRef.set({
         'name': data.name,
@@ -115,28 +122,5 @@ class _AddProductScreenState extends State<AddProductScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
-  }
-
-  Future<List<String>> _uploadImages(
-    String productId,
-    List<ProductImageUpload> images,
-  ) async {
-    final urls = <String>[];
-
-    for (final image in images) {
-      final ref = _storage
-          .ref()
-          .child('product-images')
-          .child(productId)
-          .child(image.fileName);
-
-      await ref.putData(
-        image.bytes,
-        SettableMetadata(contentType: image.contentType),
-      );
-      urls.add(await ref.getDownloadURL());
-    }
-
-    return urls;
   }
 }

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../categories/models/category_model.dart';
+import '../../products/models/product_image_upload.dart';
 import '../../products/models/product_model.dart';
 
 class ProductFormData {
@@ -36,20 +37,6 @@ class ProductFormData {
     required this.existingImageUrls,
     required this.newImages,
   });
-}
-
-class ProductImageUpload {
-  final String fileName;
-  final Uint8List bytes;
-  final String contentType;
-
-  const ProductImageUpload({
-    required this.fileName,
-    required this.bytes,
-    required this.contentType,
-  });
-
-  int get sizeInKb => (bytes.length / 1024).ceil();
 }
 
 class ProductForm extends StatefulWidget {

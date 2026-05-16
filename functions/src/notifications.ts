@@ -233,7 +233,7 @@ export async function sendWhatsAppNotification(
         messageId: result.messageId,
         sentAt: new Date(),
         sentVia: WHATSAPP_BUSINESS_PHONE_ID ? 'whatsapp-business-api' : 'twilio',
-        status: 'success',
+        logStatus: 'success',
       });
     } else {
       await admin.firestore().collection('whatsapp_logs').add({
@@ -243,7 +243,7 @@ export async function sendWhatsAppNotification(
         status,
         sentAt: new Date(),
         sentVia: WHATSAPP_BUSINESS_PHONE_ID ? 'whatsapp-business-api' : 'twilio',
-        status: 'failed',
+        logStatus: 'failed',
         error: result.error,
       });
     }
@@ -259,7 +259,7 @@ export async function sendWhatsAppNotification(
       customerName,
       status,
       sentAt: new Date(),
-      status: 'error',
+      logStatus: 'error',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 

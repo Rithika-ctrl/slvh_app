@@ -204,10 +204,11 @@ export const sendTestWhatsApp = functions.https.onRequest(async (req, res) => {
     const { phoneNumber, status } = req.query;
 
     if (!phoneNumber || !status) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Missing phoneNumber or status parameter',
       });
+      return;
     }
 
     const result = await sendWhatsAppNotification({
@@ -225,10 +226,10 @@ export const sendTestWhatsApp = functions.https.onRequest(async (req, res) => {
       },
     });
 
-    return res.json(result);
+    res.json(result);
   } catch (error) {
     console.error('Error in sendTestWhatsApp:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Error sending test WhatsApp',
       error: error instanceof Error ? error.message : 'Unknown error',

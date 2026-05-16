@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../products/models/product_model.dart';
+import '../../products/services/cloudinary_upload_service.dart';
 import '../../products/services/pricing_service.dart';
 import '../../products/services/product_service.dart';
 
@@ -21,7 +21,7 @@ class _ProductListAdminState extends State<ProductListAdmin> {
   final _productService = ProductService();
   final _pricingService = PricingService();
   final _firestore = FirebaseFirestore.instance;
-  final _storage = FirebaseStorage.instance;
+  final _cloudinaryService = CloudinaryUploadService();
   bool _showInactive = true;
   bool _isUploadingCsv = false;
 
@@ -234,13 +234,7 @@ class _ProductListAdminState extends State<ProductListAdmin> {
 
   Future<bool> _deleteProduct(ProductModel product) async {
     try {
-      for (final imageUrl in product.images) {
-        try {
-          await _storage.refFromURL(imageUrl).delete();
-        } catch (_) {
-          // Keep deleting the product if an image was already removed or moved.
-        }
-      }
+      await _cloudinaryService.deleteImagesByUrls(product.images);
 
       await _pricingService.deleteAllPricingTiers(product.id);
       return _productService.deleteProduct(product.id);

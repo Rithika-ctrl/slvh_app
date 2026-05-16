@@ -49,6 +49,10 @@ web/flutter_service_worker.js
 .env
 .env.local
 
+# Firebase credentials (NEVER commit these!)
+firebase-adminsdk*.json
+*service-account*.json
+
 # Generated
 *.g.dart
 *.config.dart
