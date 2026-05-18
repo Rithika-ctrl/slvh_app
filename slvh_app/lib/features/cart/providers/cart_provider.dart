@@ -365,6 +365,15 @@ class CartProvider extends ChangeNotifier {
     };
   }
 
+  /// Stop real-time stock monitoring without disposing the ChangeNotifier.
+  /// Use this when leaving cart UI while keeping provider alive app-wide.
+  void stopStockMonitoring() {
+    _outOfStockHandler.dispose();
+    _outOfStockItems.clear();
+    _lowStockItems.clear();
+    notifyListeners();
+  }
+
   /// Cleanup: Dispose stock monitoring listeners
   /// Call this when the cart screen is disposed
   @override

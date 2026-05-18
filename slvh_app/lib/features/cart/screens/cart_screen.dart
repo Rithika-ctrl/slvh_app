@@ -31,8 +31,10 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void dispose() {
     // Cleanup listeners when cart screen closes
-    final cartProvider = context.read<CartProvider>();
-    cartProvider.dispose();
+    if (mounted) {
+      final cartProvider = context.read<CartProvider>();
+      cartProvider.stopStockMonitoring();
+    }
     super.dispose();
   }
 
