@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/constants/cloudinary_config.dart';
 import '../models/product_image_upload.dart';
+import 'cloudinary_config_service.dart';
 
 class CloudinaryUploadException implements Exception {
   final String message;
@@ -33,10 +34,10 @@ class CloudinaryUploadService {
     String? apiSecret,
     String? folder,
   })  : _client = client ?? http.Client(),
-        cloudName = cloudName ?? CloudinaryConfig.cloudName,
-        apiKey = apiKey ?? CloudinaryConfig.apiKey,
-        apiSecret = apiSecret ?? CloudinaryConfig.apiSecret,
-        folder = folder ?? CloudinaryConfig.productFolder;
+        cloudName = cloudName ?? CloudinaryConfigService().cloudName,
+        apiKey = apiKey ?? CloudinaryConfigService().apiKey,
+        apiSecret = apiSecret ?? CloudinaryConfigService().apiSecret,
+        folder = folder ?? CloudinaryConfigService().productFolder;
 
   final http.Client _client;
   final String cloudName;

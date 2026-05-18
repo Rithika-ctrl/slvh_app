@@ -7,6 +7,7 @@ import 'features/notifications/services/notification_service.dart';
 import 'connectivity/connectivity_service.dart';      // ← Feature 11
 import 'connectivity/pending_write_queue.dart';        // ← Feature 11
 import 'features/cart/services/cart_service.dart';    // ← Feature 11
+import 'features/products/services/cloudinary_config_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize Cloudinary configuration from Firebase Remote Config
+  await CloudinaryConfigService().initialize();
 
   // Initialize Notifications
   await NotificationService().initialize();
