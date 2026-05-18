@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:slvh_app/features/pickup_slots/models/slot_model.dart';
 import 'package:slvh_app/features/pickup_slots/services/slot_service.dart';
 import 'package:slvh_app/features/pickup_slots/widgets/slot_grid.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Screen for selecting pickup date and time slot
 class SlotPickerScreen extends StatefulWidget {
@@ -50,7 +51,7 @@ class _SlotPickerScreenState extends State<SlotPickerScreen> {
       // Load slots for first date
       await _loadSlotsForDate(_selectedDate!);
     } catch (e) {
-      print('Error initializing: $e');
+      AppLogger.debug('Error initializing: $e');
       setState(() {
         _isLoadingSettings = false;
       });
@@ -73,7 +74,7 @@ class _SlotPickerScreenState extends State<SlotPickerScreen> {
         _isLoadingSlots = false;
       });
     } catch (e) {
-      print('Error loading slots: $e');
+      AppLogger.debug('Error loading slots: $e');
       setState(() {
         _isLoadingSlots = false;
         _slotsForSelectedDate = [];
@@ -459,3 +460,5 @@ class _SlotPickerScreenState extends State<SlotPickerScreen> {
     return '${days[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
   }
 }
+
+

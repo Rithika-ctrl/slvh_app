@@ -9,6 +9,7 @@ import 'connectivity/pending_write_queue.dart';        // ← Feature 11
 import 'features/cart/services/cart_service.dart';    // ← Feature 11
 import 'features/products/services/cloudinary_config_service.dart';
 import 'core/constants/legal_config.dart';
+import 'core/utils/secure_logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,8 +24,8 @@ void main() async {
 
   // Validate legal configuration (Privacy Policy & Terms required for Play Store)
   if (!LegalConfig.isConfigured) {
-    print('⚠️ CRITICAL: ${LegalConfig.getConfigStatus()}');
-    print('   Update lib/core/constants/legal_config.dart before production deployment');
+    AppLogger.debug('⚠️ CRITICAL: ${LegalConfig.getConfigStatus()}');
+    AppLogger.debug('   Update lib/core/constants/legal_config.dart before production deployment');
   }
 
   // Initialize Notifications
@@ -49,3 +50,4 @@ void main() async {
 
   runApp(const SLVHApp());
 }
+

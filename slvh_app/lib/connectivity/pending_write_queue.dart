@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../connectivity/connectivity_service.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// PendingWriteQueue
 ///
@@ -88,7 +89,7 @@ class PendingWriteQueue {
   Future<bool> enqueueWithConfirmation(PendingWrite write) async {
     final box = _box;
     if (box == null) {
-      print('⚠️ PendingWriteQueue not initialised — write dropped: ${write.path}');
+      AppLogger.debug('⚠️ PendingWriteQueue not initialised — write dropped: ${write.path}');
       return false;
     }
 
@@ -98,11 +99,11 @@ class PendingWriteQueue {
       // Verify the entry was actually persisted
       final stored = box.get(write.id);
       if (stored == null) {
-        print('❌ Verification failed — write not found after put: ${write.id}');
+        AppLogger.debug('❌ Verification failed — write not found after put: ${write.id}');
         return false;
       }
 
-      print('📥 Queued+verified write [${write.id}] → ${write.path} '
+      AppLogger.debug('📥 Queued+verified write [${write.id}] → ${write.path} '
           '(queue depth: ${box.length})');
 
       if (ConnectivityService.instance.isOnline) {
@@ -110,7 +111,7 @@ class PendingWriteQueue {
       }
       return true;
     } catch (e) {
-      print('❌ Failed to queue write [${write.id}] → ${write.path}: $e');
+      AppLogger.debug('❌ Failed to queue write [${write.id}] → ${write.path}: $e');
       return false;
     }
   }
@@ -123,11 +124,11 @@ class PendingWriteQueue {
   Future<void> enqueue(PendingWrite write) async {
     final box = _box;
     if (box == null) {
-      print('⚠️ PendingWriteQueue not initialised — write dropped');
+      AppLogger.debug('⚠️ PendingWriteQueue not initialised — write dropped');
       return;
     }
     await box.put(write.id, jsonEncode(write.toJson()));
-    print('📥 Queued write [${write.id}] → ${write.path}');
+    AppLogger.debug('📥 Queued write [${write.id}] → ${write.path}');
 
     // Flush immediately if we happen to be online right now
     if (ConnectivityService.instance.isOnline) {
@@ -142,14 +143,14 @@ class PendingWriteQueue {
     if (box == null || _isFlushing || box.isEmpty) return;
 
     _isFlushing = true;
-    print('🔄 Flushing ${box.length} pending write(s)...');
+    AppLogger.debug('🔄 Flushing ${box.length} pending write(s)...');
 
     // Snapshot keys to avoid concurrent-modification issues
     final keys = box.keys.cast<String>().toList();
 
     for (final key in keys) {
       if (!ConnectivityService.instance.isOnline) {
-        print('⚡ Went offline mid-flush — pausing');
+        AppLogger.debug('⚡ Went offline mid-flush — pausing');
         break;
       }
 
@@ -160,15 +161,15 @@ class PendingWriteQueue {
         final write = PendingWrite.fromJson(jsonDecode(raw));
         await _executor!(write);
         await box.delete(key);
-        print('✅ Flushed write [${write.id}] → ${write.path}');
+        AppLogger.debug('✅ Flushed write [${write.id}] → ${write.path}');
       } catch (e) {
-        print('❌ Failed to flush write [$key]: $e');
+        AppLogger.debug('❌ Failed to flush write [$key]: $e');
         // Leave it in the box — it will retry next flush cycle
       }
     }
 
     _isFlushing = false;
-    print('✅ Flush complete. Remaining: ${box.length}');
+    AppLogger.debug('✅ Flush complete. Remaining: ${box.length}');
   }
 
   /// Number of writes currently waiting to be synced
@@ -265,3 +266,4 @@ class PendingWrite {
         merge: json['merge'] as bool? ?? true,
       );
 }
+

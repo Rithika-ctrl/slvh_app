@@ -3,6 +3,7 @@ import '../../features/auth/services/auth_service.dart';
 import '../../features/auth/screens/phone_input_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/admin/screens/admin_dashboard_screen.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// AuthWrapper Widget
 /// 
@@ -42,7 +43,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         'role': role,
       };
     } catch (e) {
-      print('Error getting initial auth state: $e');
+      AppLogger.debug('Error getting initial auth state: $e');
       return {
         'customerLoggedIn': false,
         'adminLoggedIn': false,
@@ -98,3 +99,5 @@ class _AuthWrapperState extends State<AuthWrapper> {
     );
   }
 }
+
+

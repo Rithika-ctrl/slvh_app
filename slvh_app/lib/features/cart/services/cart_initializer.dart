@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:slvh_app/features/cart/providers/cart_provider.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Initializer for cart persistence on app startup
 /// Loads cart from Firestore after user authentication
@@ -12,7 +13,7 @@ class CartInitializer {
       final user = FirebaseAuth.instance.currentUser;
       
       if (user == null) {
-        print('ℹ️ No authenticated user, skipping cart load');
+        AppLogger.debug('ℹ️ No authenticated user, skipping cart load');
         return;
       }
 
@@ -20,9 +21,9 @@ class CartInitializer {
       // For traditional ChangeNotifier, use ref.read()
       // For Riverpod, you may need to adjust based on your setup
       
-      print('✅ Cart initialization complete for user: ${user.uid}');
+      AppLogger.debug('✅ Cart initialization complete for user: ${user.uid}');
     } catch (e) {
-      print('❌ Failed to initialize cart: $e');
+      AppLogger.debug('❌ Failed to initialize cart: $e');
     }
   }
 
@@ -33,15 +34,15 @@ class CartInitializer {
       final user = FirebaseAuth.instance.currentUser;
       
       if (user == null) {
-        print('⚠️ No authenticated user for cart load');
+        AppLogger.debug('⚠️ No authenticated user for cart load');
         return;
       }
 
       // Load from Firestore
       await cartProvider.loadFromFirestore();
-      print('✅ Cart loaded from Firestore after auth');
+      AppLogger.debug('✅ Cart loaded from Firestore after auth');
     } catch (e) {
-      print('⚠️ Failed to load cart after auth: $e');
+      AppLogger.debug('⚠️ Failed to load cart after auth: $e');
     }
   }
 
@@ -49,9 +50,11 @@ class CartInitializer {
   static Future<void> clearOnLogout(CartProvider cartProvider) async {
     try {
       await cartProvider.clearCart();
-      print('✅ Cart cleared on logout');
+      AppLogger.debug('✅ Cart cleared on logout');
     } catch (e) {
-      print('⚠️ Failed to clear cart on logout: $e');
+      AppLogger.debug('⚠️ Failed to clear cart on logout: $e');
     }
   }
 }
+
+

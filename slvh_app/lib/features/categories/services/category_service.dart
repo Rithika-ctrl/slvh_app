@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/category_model.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Category Service
 /// 
@@ -30,7 +31,7 @@ class CategoryService {
           .map((doc) => CategoryModel.fromFirestore(doc.id, doc.data()))
           .toList();
     } catch (e) {
-      print('Error fetching categories: $e');
+      AppLogger.debug('Error fetching categories: $e');
       return [];
     }
   }
@@ -45,7 +46,7 @@ class CategoryService {
       }
       return null;
     } catch (e) {
-      print('Error fetching category: $e');
+      AppLogger.debug('Error fetching category: $e');
       return null;
     }
   }
@@ -68,10 +69,10 @@ class CategoryService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('Category created with ID: ${docRef.id}');
+      AppLogger.debug('Category created with ID: ${docRef.id}');
       return docRef.id;
     } catch (e) {
-      print('Error creating category: $e');
+      AppLogger.debug('Error creating category: $e');
       return null;
     }
   }
@@ -96,10 +97,10 @@ class CategoryService {
 
       await _firestore.collection(_collectionPath).doc(categoryId).update(updateData);
 
-      print('Category $categoryId updated');
+      AppLogger.debug('Category $categoryId updated');
       return true;
     } catch (e) {
-      print('Error updating category: $e');
+      AppLogger.debug('Error updating category: $e');
       return false;
     }
   }
@@ -109,10 +110,10 @@ class CategoryService {
     try {
       await _firestore.collection(_collectionPath).doc(categoryId).delete();
 
-      print('Category $categoryId deleted');
+      AppLogger.debug('Category $categoryId deleted');
       return true;
     } catch (e) {
-      print('Error deleting category: $e');
+      AppLogger.debug('Error deleting category: $e');
       return false;
     }
   }
@@ -130,7 +131,7 @@ class CategoryService {
               .toList();
         })
         .handleError((error) {
-          print('Error watching categories: $error');
+          AppLogger.debug('Error watching categories: $error');
           return <CategoryModel>[];
         });
   }
@@ -151,10 +152,10 @@ class CategoryService {
       });
 
       await batch.commit();
-      print('Sort order updated for ${categoryIdToSortOrder.length} categories');
+      AppLogger.debug('Sort order updated for ${categoryIdToSortOrder.length} categories');
       return true;
     } catch (e) {
-      print('Error updating sort order: $e');
+      AppLogger.debug('Error updating sort order: $e');
       return false;
     }
   }
@@ -165,8 +166,10 @@ class CategoryService {
       final snapshot = await _firestore.collection(_collectionPath).count().get();
       return snapshot.count ?? 0;
     } catch (e) {
-      print('Error getting category count: $e');
+      AppLogger.debug('Error getting category count: $e');
       return 0;
     }
   }
 }
+
+

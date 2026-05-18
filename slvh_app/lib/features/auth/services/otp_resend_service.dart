@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Exception for OTP resend failures
 class OTPResendException implements Exception {
@@ -66,7 +67,7 @@ class OTPResendService {
           final message =
               'Please wait ${retryAfter}s before requesting another OTP';
 
-          print('❌ OTP resend rate-limited: $message');
+          AppLogger.debug('❌ OTP resend rate-limited: $message');
 
           throw OTPResendException(
             message: message,
@@ -82,7 +83,7 @@ class OTPResendService {
         final message =
             'Maximum OTP resend attempts (3) exceeded. Please try again later.';
 
-        print('❌ OTP max resends exceeded: $message');
+        AppLogger.debug('❌ OTP max resends exceeded: $message');
 
         throw OTPResendException(
           message: message,
@@ -100,7 +101,7 @@ class OTPResendService {
         'updated_at': now,
       }, SetOptions(merge: true));
 
-      print(
+      AppLogger.debug(
           '✅ OTP resend allowed for $normalizedPhone (attempt ${resendCount + 1}/$maxResendAttempts)');
       return true;
     } catch (e) {
@@ -110,7 +111,7 @@ class OTPResendService {
       }
 
       final message = 'Failed to process resend request: ${e.toString()}';
-      print('❌ OTP resend error: $message');
+      AppLogger.debug('❌ OTP resend error: $message');
 
       onError(message);
       throw OTPResendException(message: message, code: 'unknown_error');
@@ -128,9 +129,9 @@ class OTPResendService {
         'otp_verified_at': DateTime.now(),
       }, SetOptions(merge: true));
 
-      print('✅ Resend counter reset for $normalizedPhone');
+      AppLogger.debug('✅ Resend counter reset for $normalizedPhone');
     } catch (e) {
-      print('⚠️ Failed to reset resend counter: $e');
+      AppLogger.debug('⚠️ Failed to reset resend counter: $e');
       // Don't throw - not critical if reset fails
     }
   }
@@ -160,7 +161,7 @@ class OTPResendService {
 
       return waitTime > 0 ? waitTime : 0;
     } catch (e) {
-      print('⚠️ Failed to get resend wait time: $e');
+      AppLogger.debug('⚠️ Failed to get resend wait time: $e');
       return 0; // If error, assume can resend
     }
   }
@@ -180,7 +181,7 @@ class OTPResendService {
 
       return userDoc['resend_count'] as int? ?? 0;
     } catch (e) {
-      print('⚠️ Failed to get resend count: $e');
+      AppLogger.debug('⚠️ Failed to get resend count: $e');
       return 0;
     }
   }
@@ -196,9 +197,9 @@ class OTPResendService {
         'cleared_at': DateTime.now(),
       }, SetOptions(merge: true));
 
-      print('✅ OTP session cleared for $normalizedPhone');
+      AppLogger.debug('✅ OTP session cleared for $normalizedPhone');
     } catch (e) {
-      print('⚠️ Failed to clear OTP session: $e');
+      AppLogger.debug('⚠️ Failed to clear OTP session: $e');
     }
   }
 
@@ -210,3 +211,5 @@ class OTPResendService {
     return '+91${phone.replaceAll(RegExp(r'\D'), '')}';
   }
 }
+
+

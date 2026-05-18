@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/products/models/product_model.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service for managing inventory and stock levels
 class InventoryService {
@@ -59,7 +60,7 @@ class InventoryService {
           .doc('inventory')
           .set({lowStockThresholdKey: threshold}, SetOptions(merge: true));
 
-      print('✅ Low stock threshold set to: $threshold');
+      AppLogger.debug('✅ Low stock threshold set to: $threshold');
     } catch (e) {
       throw Exception('Failed to set low stock threshold: $e');
     }
@@ -107,7 +108,7 @@ class InventoryService {
         'timestamp': DateTime.now(),
       });
 
-      print('✅ Stock adjusted for product $productId: $quantityChange units');
+      AppLogger.debug('✅ Stock adjusted for product $productId: $quantityChange units');
     } catch (e) {
       throw Exception('Failed to adjust stock: $e');
     }
@@ -125,7 +126,7 @@ class InventoryService {
       final stock = doc.data()?['stock'] as int? ?? 0;
       return stock <= threshold;
     } catch (e) {
-      print('Error checking low stock: $e');
+      AppLogger.debug('Error checking low stock: $e');
       return false;
     }
   }
@@ -164,7 +165,7 @@ class InventoryService {
             .toList();
       });
     } catch (e) {
-      print('Error watching low stock products: $e');
+      AppLogger.debug('Error watching low stock products: $e');
       yield [];
     }
   }
@@ -291,8 +292,10 @@ class InventoryService {
         };
       });
     } catch (e) {
-      print('Error watching inventory stats: $e');
+      AppLogger.debug('Error watching inventory stats: $e');
       yield {};
     }
   }
 }
+
+

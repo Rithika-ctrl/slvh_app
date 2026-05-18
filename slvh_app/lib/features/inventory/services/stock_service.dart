@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Exception for stock reservation failures
 class StockReservationException implements Exception {
@@ -114,12 +115,12 @@ class StockService {
         }
       });
 
-      print(
+      AppLogger.debug(
           '✅ Stock reserved atomically for ${items.length} items: ${newStockLevels.toString()}');
       return newStockLevels;
     } catch (e) {
       if (e is StockReservationException) {
-        print('❌ Stock reservation failed: $e');
+        AppLogger.debug('❌ Stock reservation failed: $e');
         rethrow;
       }
       throw StockReservationException(
@@ -162,11 +163,11 @@ class StockService {
         transaction.update(productRef, {'stock': newStock});
       });
 
-      print('✅ Stock released: +$quantity for product $productId (new: $newStock)');
+      AppLogger.debug('✅ Stock released: +$quantity for product $productId (new: $newStock)');
       return newStock;
     } catch (e) {
       if (e is StockReservationException) {
-        print('❌ Stock release failed: $e');
+        AppLogger.debug('❌ Stock release failed: $e');
         rethrow;
       }
       throw StockReservationException(
@@ -233,3 +234,5 @@ class StockService {
     }
   }
 }
+
+

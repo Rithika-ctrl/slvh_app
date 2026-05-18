@@ -1,5 +1,6 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:slvh_app/core/constants/cloudinary_config.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service to initialize and manage Cloudinary configuration from Firebase Remote Config
 /// 
@@ -88,7 +89,7 @@ class CloudinaryConfigService {
       _apiSecret = remoteConfig.getString('cloudinary_secret');
       _productFolder = remoteConfig.getString('cloudinary_product_folder');
 
-      print(
+      AppLogger.debug(
         '✅ Cloudinary config initialized from Firebase Remote Config\n'
         'Cloud Name: $_cloudName\n'
         'API Key: $_apiKey\n'
@@ -97,8 +98,8 @@ class CloudinaryConfigService {
       );
     } catch (e) {
       // If initialization fails, fall back to local constants
-      print('⚠️ Failed to fetch Cloudinary config from Firebase: $e');
-      print('Using local defaults from CloudinaryConfig');
+      AppLogger.debug('⚠️ Failed to fetch Cloudinary config from Firebase: $e');
+      AppLogger.debug('Using local defaults from CloudinaryConfig');
 
       _cloudName = CloudinaryConfig.cloudName;
       _apiKey = CloudinaryConfig.apiKey;
@@ -107,3 +108,5 @@ class CloudinaryConfigService {
     }
   }
 }
+
+

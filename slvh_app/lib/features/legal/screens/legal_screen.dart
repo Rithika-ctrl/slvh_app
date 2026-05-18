@@ -35,8 +35,8 @@ class _LegalScreenState extends State<LegalScreen> {
     
     // ⚠️ CRITICAL: Validate legal URLs are configured
     if (!LegalConfig.isConfigured) {
-      print('⚠️ CRITICAL: Legal URLs not properly configured!');
-      print(LegalConfig.getConfigStatus());
+      AppLogger.debug('⚠️ CRITICAL: Legal URLs not properly configured!');
+      AppLogger.debug(LegalConfig.getConfigStatus());
     }
     
     _controller = WebViewController()

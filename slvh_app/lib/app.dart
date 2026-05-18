@@ -5,6 +5,7 @@ import 'routes/app_router.dart';
 import 'features/cart/providers/cart_provider.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/auth/services/session_manager_service.dart';
+import 'core/utils/secure_logger.dart';
 import 'connectivity/connectivity_provider.dart';     // ← Feature 11
 import 'shared/widgets/no_internet_overlay.dart';    // ← Feature 11
 
@@ -38,20 +39,20 @@ class _SLVHAppState extends State<SLVHApp> {
     _sessionManager = SessionManagerService();
     _authService = AuthService();
 
-    print('🚀 App: Initializing Firebase session management...');
+    AppLogger.debug('🚀 App: Initializing Firebase session management...');
 
     _sessionManager.initialize(
       onSessionExpired: () {
-        print('🔴 App: Session expired - user logged out');
+        AppLogger.debug('🔴 App: Session expired - user logged out');
       },
       onSessionValid: () {
-        print('✅ App: Session is valid');
+        AppLogger.debug('✅ App: Session is valid');
       },
     );
 
     _authService.initializeSessionManager(_sessionManager);
 
-    print('✅ App: Firebase session initialized');
+    AppLogger.debug('✅ App: Firebase session initialized');
   }
 
   @override
@@ -95,3 +96,4 @@ class _SLVHAppState extends State<SLVHApp> {
     );
   }
 }
+

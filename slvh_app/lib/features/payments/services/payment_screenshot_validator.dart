@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Validation rules for payment screenshots
 class PaymentScreenshotValidator {
@@ -66,11 +67,11 @@ class PaymentScreenshotValidator {
 
       // If already under 2 MB, minimal compression needed
       if (fileSizeBytes < 2 * 1024 * 1024) {
-        print('✅ Image already optimized (${_formatBytes(fileSizeBytes)})');
+        AppLogger.debug('✅ Image already optimized (${_formatBytes(fileSizeBytes)})');
         return file;
       }
 
-      print('🔄 Compressing image (${_formatBytes(fileSizeBytes)})...');
+      AppLogger.debug('🔄 Compressing image (${_formatBytes(fileSizeBytes)})...');
 
       // Get temporary directory
       final tempDir = await getTemporaryDirectory();
@@ -85,24 +86,24 @@ class PaymentScreenshotValidator {
       );
 
       if (result == null) {
-        print('⚠️ Compression failed, using original');
+        AppLogger.debug('⚠️ Compression failed, using original');
         return file;
       }
 
       final compressedFile = File(result.path);
       final compressedSizeBytes = await compressedFile.length();
 
-      print('✅ Image compressed: ${_formatBytes(fileSizeBytes)} → ${_formatBytes(compressedSizeBytes)}');
+      AppLogger.debug('✅ Image compressed: ${_formatBytes(fileSizeBytes)} → ${_formatBytes(compressedSizeBytes)}');
 
       // Check if compressed file exceeds max size
       if (compressedSizeBytes > maxFileSizeBytes) {
-        print('⚠️ Compressed image still too large, trying lower quality...');
+        AppLogger.debug('⚠️ Compressed image still too large, trying lower quality...');
         return _compressWithLowerQuality(file);
       }
 
       return compressedFile;
     } catch (e) {
-      print('❌ Compression error: $e');
+      AppLogger.debug('❌ Compression error: $e');
       return file;
     }
   }
@@ -127,10 +128,10 @@ class PaymentScreenshotValidator {
       final compressedFile = File(result.path);
       final compressedSizeBytes = await compressedFile.length();
 
-      print('✅ Image re-compressed with lower quality: ${_formatBytes(compressedSizeBytes)}');
+      AppLogger.debug('✅ Image re-compressed with lower quality: ${_formatBytes(compressedSizeBytes)}');
       return compressedFile;
     } catch (e) {
-      print('❌ Low quality compression error: $e');
+      AppLogger.debug('❌ Low quality compression error: $e');
       return file;
     }
   }
@@ -177,3 +178,5 @@ class PaymentScreenshotValidator {
     }
   }
 }
+
+

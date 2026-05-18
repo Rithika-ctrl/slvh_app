@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/payments/models/payment_model.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service for handling payment rejection flow
 /// When vendor rejects payment screenshot, this handles:
@@ -115,9 +116,9 @@ class PaymentRejectionService {
         rejectionReason: rejectionReason,
       );
 
-      print('✅ Customer notified about payment rejection');
+      AppLogger.debug('✅ Customer notified about payment rejection');
     } catch (e) {
-      print('⚠️ Failed to notify customer: $e');
+      AppLogger.debug('⚠️ Failed to notify customer: $e');
     }
   }
 
@@ -147,8 +148,8 @@ Open the app to view refund instructions.
 Need help? Reply to this message.
       ''';
 
-      print('📱 WhatsApp Message (would be sent in production):');
-      print(message);
+      AppLogger.debug('📱 WhatsApp Message (would be sent in production):');
+      AppLogger.debug(message);
 
       // TODO: Implement via Cloud Function
       // await _firestore.collection('whatsapp_queue').add({
@@ -158,7 +159,7 @@ Need help? Reply to this message.
       //   'createdAt': DateTime.now(),
       // });
     } catch (e) {
-      print('⚠️ Failed to queue WhatsApp notification: $e');
+      AppLogger.debug('⚠️ Failed to queue WhatsApp notification: $e');
     }
   }
 
@@ -235,7 +236,7 @@ Need help? Reply to this message.
         'whatsapp': doc['whatsapp'] as String? ?? '+91-XXXXXXXXXX',
       };
     } catch (e) {
-      print('⚠️ Failed to fetch shop contact info: $e');
+      AppLogger.debug('⚠️ Failed to fetch shop contact info: $e');
       return {
         'phone': '+91-XXXXXXXXXX',
         'email': 'support@smartshop.com',
@@ -274,3 +275,5 @@ Contact us via WhatsApp, Phone, or Email for assistance
 ''';
   }
 }
+
+

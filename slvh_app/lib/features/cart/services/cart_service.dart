@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:slvh_app/features/cart/models/cart_item_model.dart';
 import 'package:slvh_app/connectivity/connectivity_service.dart';
 import 'package:slvh_app/connectivity/pending_write_queue.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service for persisting cart to Firestore
 /// Saves cart data to users/{uid}/cart document
@@ -47,7 +48,7 @@ class CartService {
   Future<bool> saveCart(List<CartItemModel> items) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) {
-      print('⚠️ User not authenticated, skipping cart save');
+      AppLogger.debug('⚠️ User not authenticated, skipping cart save');
       return false;
     }
 
@@ -67,10 +68,10 @@ class CartService {
             .collection('cart')
             .doc('data')
             .set(payload);
-        print('✅ Cart saved to Firestore (${items.length} items)');
+        AppLogger.debug('✅ Cart saved to Firestore (${items.length} items)');
         return true;
       } catch (e) {
-        print('❌ Failed to save cart to Firestore: $e');
+        AppLogger.debug('❌ Failed to save cart to Firestore: $e');
         return false; // local cart (SharedPreferences) still works
       }
     } else {
@@ -89,9 +90,9 @@ class CartService {
         ),
       );
       if (queued) {
-        print('📥 Cart queued offline (${items.length} items) — will sync when online');
+        AppLogger.debug('📥 Cart queued offline (${items.length} items) — will sync when online');
       } else {
-        print('❌ Cart offline queue FAILED — write may be lost');
+        AppLogger.debug('❌ Cart offline queue FAILED — write may be lost');
       }
       return queued;
     }
@@ -105,14 +106,14 @@ class CartService {
     try {
       final userId = _auth.currentUser?.uid;
       if (userId == null) {
-        print('⚠️ User not authenticated, skipping Firestore cart load');
+        AppLogger.debug('⚠️ User not authenticated, skipping Firestore cart load');
         return [];
       }
 
       if (!ConnectivityService.instance.isOnline) {
         // Offline — return empty; CartProvider will fall back to
         // SharedPreferences which already has the local copy.
-        print('📴 Offline — skipping Firestore cart load, using local cache');
+        AppLogger.debug('📴 Offline — skipping Firestore cart load, using local cache');
         return [];
       }
 
@@ -124,7 +125,7 @@ class CartService {
           .get();
 
       if (!doc.exists) {
-        print('ℹ️ No saved cart found in Firestore');
+        AppLogger.debug('ℹ️ No saved cart found in Firestore');
         return [];
       }
 
@@ -135,10 +136,10 @@ class CartService {
           .map((item) => CartItemModel.fromJson(item as Map<String, dynamic>))
           .toList();
 
-      print('✅ Cart loaded from Firestore (${items.length} items)');
+      AppLogger.debug('✅ Cart loaded from Firestore (${items.length} items)');
       return items;
     } catch (e) {
-      print('❌ Failed to load cart from Firestore: $e');
+      AppLogger.debug('❌ Failed to load cart from Firestore: $e');
       return [];
     }
   }
@@ -195,7 +196,7 @@ class CartService {
           createdAt: DateTime.now(),
           merge: false,
         ));
-        print('📥 Cart clear queued offline — will sync when online');
+        AppLogger.debug('📥 Cart clear queued offline — will sync when online');
         return;
       }
 
@@ -206,9 +207,9 @@ class CartService {
           .doc('data')
           .delete();
 
-      print('✅ Cart cleared from Firestore');
+      AppLogger.debug('✅ Cart cleared from Firestore');
     } catch (e) {
-      print('❌ Failed to clear cart from Firestore: $e');
+      AppLogger.debug('❌ Failed to clear cart from Firestore: $e');
     }
   }
 
@@ -233,7 +234,7 @@ class CartService {
 
       return doc.data() as Map<String, dynamic>;
     } catch (e) {
-      print('⚠️ Failed to get cart summary: $e');
+      AppLogger.debug('⚠️ Failed to get cart summary: $e');
       return null;
     }
   }
@@ -273,3 +274,4 @@ Future<void> cartQueueExecutor(PendingWrite write) async {
       break;
   }
 }
+

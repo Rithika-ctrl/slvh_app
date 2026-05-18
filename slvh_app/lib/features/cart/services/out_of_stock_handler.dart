@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service for monitoring product stock levels in real-time
 /// Tracks which cart items go out of stock and notifies listeners
@@ -30,7 +31,7 @@ class OutOfStockHandler {
       _setupStockListener(productId);
     }
 
-    print('✅ Stock monitoring initialized for ${productIds.length} products');
+    AppLogger.debug('✅ Stock monitoring initialized for ${productIds.length} products');
   }
 
   /// Set up real-time listener for a single product's stock
@@ -42,7 +43,7 @@ class OutOfStockHandler {
       if (doc.exists) {
         final stock = doc.data()?['stock'] as int? ?? 0;
         _currentStock[productId] = stock;
-        print('📦 Initial stock for $productId: $stock units');
+        AppLogger.debug('📦 Initial stock for $productId: $stock units');
       }
 
       // Then set up real-time listener
@@ -59,7 +60,7 @@ class OutOfStockHandler {
                 // Only notify if stock actually changed
                 if (newStock != oldStock) {
                   _currentStock[productId] = newStock;
-                  print('📊 Stock changed for $productId: $oldStock → $newStock');
+                  AppLogger.debug('📊 Stock changed for $productId: $oldStock → $newStock');
                   
                   // Call the callback
                   _onStockChanged?.call(productId, newStock);
@@ -67,14 +68,14 @@ class OutOfStockHandler {
               }
             },
             onError: (error) {
-              print('❌ Error listening to stock for $productId: $error');
+              AppLogger.debug('❌ Error listening to stock for $productId: $error');
             },
           );
 
       // Store subscription for cleanup
       _stockListeners[productId] = subscription;
     } catch (e) {
-      print('❌ Failed to set up stock listener for $productId: $e');
+      AppLogger.debug('❌ Failed to set up stock listener for $productId: $e');
     }
   }
 
@@ -114,6 +115,7 @@ class OutOfStockHandler {
   void dispose() {
     _clearAllListeners();
     _onStockChanged = null;
-    print('✅ OutOfStockHandler disposed');
+    AppLogger.debug('✅ OutOfStockHandler disposed');
   }
 }
+

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/products/models/pricing_tier_model.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service for managing pricing tiers in Firestore
 /// Pricing tiers are stored as sub-collections under products/{productId}/pricing_tiers/
@@ -22,7 +23,7 @@ class PricingService {
 
       return tiers;
     } catch (e) {
-      print('Error fetching pricing tiers: $e');
+      AppLogger.debug('Error fetching pricing tiers: $e');
       return [];
     }
   }
@@ -39,7 +40,7 @@ class PricingService {
             .map((doc) => PricingTierModel.fromFirestore(doc.id, doc.data()))
             .toList())
         .handleError((e) {
-          print('Error watching pricing tiers: $e');
+          AppLogger.debug('Error watching pricing tiers: $e');
           return [];
         });
   }
@@ -60,7 +61,7 @@ class PricingService {
       if (!doc.exists) return null;
       return PricingTierModel.fromFirestore(doc.id, doc.data()!);
     } catch (e) {
-      print('Error fetching pricing tier: $e');
+      AppLogger.debug('Error fetching pricing tier: $e');
       return null;
     }
   }
@@ -80,9 +81,9 @@ class PricingService {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      print('✅ Pricing tier created');
+      AppLogger.debug('✅ Pricing tier created');
     } catch (e) {
-      print('Error creating pricing tier: $e');
+      AppLogger.debug('Error creating pricing tier: $e');
       rethrow;
     }
   }
@@ -103,9 +104,9 @@ class PricingService {
         ...updates,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      print('✅ Pricing tier updated');
+      AppLogger.debug('✅ Pricing tier updated');
     } catch (e) {
-      print('Error updating pricing tier: $e');
+      AppLogger.debug('Error updating pricing tier: $e');
       rethrow;
     }
   }
@@ -119,9 +120,9 @@ class PricingService {
           .collection('pricing_tiers')
           .doc(tierId)
           .delete();
-      print('✅ Pricing tier deleted');
+      AppLogger.debug('✅ Pricing tier deleted');
     } catch (e) {
-      print('Error deleting pricing tier: $e');
+      AppLogger.debug('Error deleting pricing tier: $e');
       rethrow;
     }
   }
@@ -157,9 +158,9 @@ class PricingService {
       );
 
       await batch.commit();
-      print('✅ Default tier updated');
+      AppLogger.debug('✅ Default tier updated');
     } catch (e) {
-      print('Error setting default tier: $e');
+      AppLogger.debug('Error setting default tier: $e');
       rethrow;
     }
   }
@@ -188,9 +189,9 @@ class PricingService {
       }
 
       await batch.commit();
-      print('✅ ${tiers.length} pricing tiers created');
+      AppLogger.debug('✅ ${tiers.length} pricing tiers created');
     } catch (e) {
-      print('Error bulk creating pricing tiers: $e');
+      AppLogger.debug('Error bulk creating pricing tiers: $e');
       rethrow;
     }
   }
@@ -212,7 +213,7 @@ class PricingService {
 
       return tiers.first;
     } catch (e) {
-      print('Error getting best value tier: $e');
+      AppLogger.debug('Error getting best value tier: $e');
       return null;
     }
   }
@@ -234,10 +235,12 @@ class PricingService {
       }
 
       await batch.commit();
-      print('✅ All pricing tiers deleted');
+      AppLogger.debug('✅ All pricing tiers deleted');
     } catch (e) {
-      print('Error deleting all pricing tiers: $e');
+      AppLogger.debug('Error deleting all pricing tiers: $e');
       rethrow;
     }
   }
 }
+
+

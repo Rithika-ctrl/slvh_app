@@ -7,6 +7,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../services/auth_service.dart';
+import '../../../core/utils/secure_logger.dart';
 
 class PhoneInputScreen extends StatefulWidget {
   const PhoneInputScreen({super.key});
@@ -91,7 +92,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen>
             _errorMessage = errorMessage;
           }
         });
-        print('❌ OTP Error: $errorMessage');
+        AppLogger.debug('❌ OTP Error: $errorMessage');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_errorMessage ?? 'An error occurred'),
@@ -491,3 +492,4 @@ class _OrangeButton extends StatelessWidget {
     );
   }
 }
+

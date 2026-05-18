@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/pickup_slots/models/slot_model.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service for managing pickup slot scheduling
 /// Handles slot creation, booking, and capacity management with Firestore transactions
@@ -25,7 +26,7 @@ class SlotService {
 
       return ShopSettingsModel.fromFirestore(doc.id, doc.data()!);
     } catch (e) {
-      print('Error fetching shop settings: $e');
+      AppLogger.debug('Error fetching shop settings: $e');
       return ShopSettingsModel(); // Return defaults
     }
   }
@@ -41,7 +42,7 @@ class SlotService {
           return ShopSettingsModel.fromFirestore(doc.id, doc.data()!);
         })
         .handleError((e) {
-          print('Error watching shop settings: $e');
+          AppLogger.debug('Error watching shop settings: $e');
           return ShopSettingsModel();
         });
   }
@@ -56,9 +57,9 @@ class SlotService {
             ...settings.toFirestore(),
             'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
-      print('✅ Shop settings updated');
+      AppLogger.debug('✅ Shop settings updated');
     } catch (e) {
-      print('Error updating shop settings: $e');
+      AppLogger.debug('Error updating shop settings: $e');
       rethrow;
     }
   }
@@ -130,10 +131,10 @@ class SlotService {
         }
       }
 
-      print('✅ Generated ${slots.length} slots for $dateStr');
+      AppLogger.debug('✅ Generated ${slots.length} slots for $dateStr');
       return slots;
     } catch (e) {
-      print('Error generating slots: $e');
+      AppLogger.debug('Error generating slots: $e');
       return [];
     }
   }
@@ -177,7 +178,7 @@ class SlotService {
 
       return availableSlots;
     } catch (e) {
-      print('Error fetching available slots: $e');
+      AppLogger.debug('Error fetching available slots: $e');
       return [];
     }
   }
@@ -198,7 +199,7 @@ class SlotService {
           .map((doc) => PickupSlotModel.fromFirestore(doc.id, doc.data()))
           .toList();
     } catch (e) {
-      print('Error fetching all slots: $e');
+      AppLogger.debug('Error fetching all slots: $e');
       return [];
     }
   }
@@ -253,14 +254,14 @@ class SlotService {
       });
 
       if (result) {
-        print('✅ Slot booked: $slotId');
+        AppLogger.debug('✅ Slot booked: $slotId');
       } else {
-        print('❌ Slot is full: $slotId');
+        AppLogger.debug('❌ Slot is full: $slotId');
       }
 
       return result;
     } catch (e) {
-      print('Error booking slot: $e');
+      AppLogger.debug('Error booking slot: $e');
       return false;
     }
   }
@@ -291,10 +292,10 @@ class SlotService {
         });
       });
 
-      print('✅ Slot booking cancelled');
+      AppLogger.debug('✅ Slot booking cancelled');
       return true;
     } catch (e) {
-      print('Error cancelling booking: $e');
+      AppLogger.debug('Error cancelling booking: $e');
       return false;
     }
   }
@@ -317,7 +318,7 @@ class SlotService {
 
       return null; // No available slots in next 7 days
     } catch (e) {
-      print('Error getting earliest slot: $e');
+      AppLogger.debug('Error getting earliest slot: $e');
       return null;
     }
   }
@@ -344,9 +345,9 @@ class SlotService {
           .doc(dateStr));
 
       await batch.commit();
-      print('✅ Slots deleted for $dateStr');
+      AppLogger.debug('✅ Slots deleted for $dateStr');
     } catch (e) {
-      print('Error deleting slots: $e');
+      AppLogger.debug('Error deleting slots: $e');
       rethrow;
     }
   }
@@ -386,3 +387,5 @@ class SlotService {
     return dates;
   }
 }
+
+

@@ -3,6 +3,7 @@ import 'package:slvh_app/features/inventory/services/stock_service.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
 import 'package:slvh_app/features/pickup_slots/services/slot_service.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service for managing orders (Firestore operations)
 /// Uses Firestore Transactions to atomically reserve stock
@@ -29,12 +30,12 @@ class OrderService {
     required OrderModel order,
   }) async {
     try {
-      print('📦 Creating order with ${order.items.length} items...');
+      AppLogger.debug('📦 Creating order with ${order.items.length} items...');
 
       // STEP 1: Reserve stock atomically using Firestore Transaction
       // This validates stock and decrements it in one atomic operation
       final newStockLevels = await _stockService.reserveStock(order.items);
-      print('✅ Stock reserved atomically: $newStockLevels');
+      AppLogger.debug('✅ Stock reserved atomically: $newStockLevels');
 
       // STEP 2: Book pickup slot
       try {
@@ -49,13 +50,13 @@ class OrderService {
             'Slot booking failed: pickup slot ${order.pickupSlotId} is full on ${order.pickupDate}',
           );
         }
-        print('✅ Pickup slot booked: ${order.pickupSlotId} on ${order.pickupDate}');
+        AppLogger.debug('✅ Pickup slot booked: ${order.pickupSlotId} on ${order.pickupDate}');
       } catch (e) {
         // NOTE: If slot booking fails, stock has already been reserved.
         // In a production environment, you might want a compensating action to restore stock,
         // or wrap both in a single large transaction.
         // For now, we throw and the UI will handle it.
-        print('❌ Slot booking failed: $e');
+        AppLogger.debug('❌ Slot booking failed: $e');
         rethrow;
       }
 
@@ -65,14 +66,14 @@ class OrderService {
 
       await orderRef.set(order.copyWith(id: orderId).toFirestore());
 
-      print('✅ Order created: $orderId');
+      AppLogger.debug('✅ Order created: $orderId');
       return orderId;
     } on StockReservationException {
       // Re-throw stock errors to be handled by UI
-      print('❌ Order creation failed: insufficient stock');
+      AppLogger.debug('❌ Order creation failed: insufficient stock');
       rethrow;
     } catch (e) {
-      print('❌ Order creation failed: $e');
+      AppLogger.debug('❌ Order creation failed: $e');
       throw Exception('Failed to create order: $e');
     }
   }
@@ -256,9 +257,9 @@ class OrderService {
         actionUrl: '/order/$orderId',
       );
 
-      print('✅ Notification sent to customer: $customerId');
+      AppLogger.debug('✅ Notification sent to customer: $customerId');
     } catch (e) {
-      print('⚠️ Failed to send notification: $e');
+      AppLogger.debug('⚠️ Failed to send notification: $e');
       // Don't throw - order status update should succeed even if notification fails
     }
   }
@@ -474,3 +475,5 @@ class OrderService {
     }
   }
 }
+
+

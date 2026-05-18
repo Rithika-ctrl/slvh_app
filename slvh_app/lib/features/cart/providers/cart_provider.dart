@@ -8,6 +8,7 @@ import 'package:slvh_app/features/products/models/pricing_tier_model.dart';
 import 'package:slvh_app/features/products/models/product_model.dart';
 import 'package:slvh_app/features/products/services/pricing_service.dart';
 import 'package:slvh_app/features/products/services/product_service.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Provider for managing shopping cart state
 /// Handles add, remove, update operations
@@ -46,10 +47,10 @@ class CartProvider extends ChangeNotifier {
         _items.clear();
         _items.addAll(firestoreItems);
         notifyListeners();
-        print('✅ Cart loaded from Firestore');
+        AppLogger.debug('✅ Cart loaded from Firestore');
       }
     } catch (e) {
-      print('⚠️ Failed to load cart from Firestore: $e');
+      AppLogger.debug('⚠️ Failed to load cart from Firestore: $e');
       // Continue with local cart
     }
   }
@@ -96,7 +97,7 @@ class CartProvider extends ChangeNotifier {
   /// Feature 8: Monitor product stock and alert on out-of-stock
   Future<void> initializeStockMonitoring() async {
     if (_items.isEmpty) {
-      print('ℹ️ Cart is empty, skipping stock monitoring');
+      AppLogger.debug('ℹ️ Cart is empty, skipping stock monitoring');
       return;
     }
 
@@ -107,7 +108,7 @@ class CartProvider extends ChangeNotifier {
       onStockChanged: _handleStockChange,
     );
 
-    print('✅ Stock monitoring initialized for ${productIds.length} cart items');
+    AppLogger.debug('✅ Stock monitoring initialized for ${productIds.length} cart items');
   }
 
   /// Handle stock change for a product
@@ -119,17 +120,17 @@ class CartProvider extends ChangeNotifier {
       // Item just went out of stock
       _outOfStockItems.add(productId);
       _lowStockItems.remove(productId);
-      print('🔴 OUT OF STOCK: $productId');
+      AppLogger.debug('🔴 OUT OF STOCK: $productId');
       notifyListeners();
     } else if (!isNowOutOfStock && wasOutOfStock) {
       // Item is back in stock
       _outOfStockItems.remove(productId);
-      print('🟢 BACK IN STOCK: $productId with $newStock units');
+      AppLogger.debug('🟢 BACK IN STOCK: $productId with $newStock units');
       notifyListeners();
     } else if (newStock > 0 && newStock <= 5) {
       // Low stock warning
       _lowStockItems.add(productId);
-      print('🟡 LOW STOCK: $productId ($newStock units)');
+      AppLogger.debug('🟡 LOW STOCK: $productId ($newStock units)');
       notifyListeners();
     } else if (newStock > 5) {
       // Stock is sufficient again
@@ -143,7 +144,7 @@ class CartProvider extends ChangeNotifier {
     await removeItem(productId);
     _outOfStockHandler.removeListener(productId);
     _outOfStockItems.remove(productId);
-    print('✅ Removed out-of-stock item: $productId');
+    AppLogger.debug('✅ Removed out-of-stock item: $productId');
   }
 
   /// Add item to cart
@@ -156,7 +157,7 @@ class CartProvider extends ChangeNotifier {
     // Validate quantity against max order limit
     int validQuantity = quantity;
     if (product.maxOrderQty != null && quantity > product.maxOrderQty!) {
-      print('⚠️ Quantity exceeds max order limit (${product.maxOrderQty}). Capping quantity.');
+      AppLogger.debug('⚠️ Quantity exceeds max order limit (${product.maxOrderQty}). Capping quantity.');
       validQuantity = product.maxOrderQty!;
     }
 
@@ -172,7 +173,7 @@ class CartProvider extends ChangeNotifier {
           : newTotal;
       
       if (cappedTotal < _items[existingIndex].quantity) {
-        print('⚠️ Adding quantity would exceed max order limit. Keeping current quantity.');
+        AppLogger.debug('⚠️ Adding quantity would exceed max order limit. Keeping current quantity.');
         await _saveCart();
         notifyListeners();
         return;
@@ -218,7 +219,7 @@ class CartProvider extends ChangeNotifier {
         : newQuantity;
 
     if (cappedQuantity < newQuantity) {
-      print('⚠️ Quantity capped to ${product!.maxOrderQty} (max order limit)');
+      AppLogger.debug('⚠️ Quantity capped to ${product!.maxOrderQty} (max order limit)');
     }
 
     // Update quantity
@@ -251,7 +252,7 @@ class CartProvider extends ChangeNotifier {
         _items[index].selectedTier = matchingTier;
       }
     } catch (e) {
-      print('Error updating pricing tier: $e');
+      AppLogger.debug('Error updating pricing tier: $e');
     }
 
     await _saveCart();
@@ -309,7 +310,7 @@ class CartProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error loading cart: $e');
+      AppLogger.debug('Error loading cart: $e');
     }
   }
 
@@ -329,7 +330,7 @@ class CartProvider extends ChangeNotifier {
       // Save to Firestore (cloud)
       await _cartService.saveCart(_items);
     } catch (e) {
-      print('Error saving cart: $e');
+      AppLogger.debug('Error saving cart: $e');
     }
   }
 
@@ -392,3 +393,5 @@ class CartProvider extends ChangeNotifier {
 
 // If you migrate to Riverpod in the future, reintroduce StateNotifier and
 // StateNotifierProvider here and add `flutter_riverpod` to `pubspec.yaml`.
+
+

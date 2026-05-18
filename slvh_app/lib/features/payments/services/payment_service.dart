@@ -5,6 +5,7 @@ import 'package:slvh_app/features/payments/models/payment_model.dart';
 import 'package:slvh_app/features/payments/services/payment_screenshot_validator.dart';
 import 'package:slvh_app/features/pickup_slots/models/slot_model.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service for managing payment operations (Firestore + Firebase Storage)
 class PaymentService {
@@ -303,7 +304,7 @@ class PaymentService {
       await _storage.ref(path).delete();
     } catch (e) {
       // Silently fail if file doesn't exist
-      print('Failed to delete screenshot: $e');
+      AppLogger.debug('Failed to delete screenshot: $e');
     }
   }
 
@@ -366,3 +367,5 @@ class PaymentService {
     }
   }
 }
+
+

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/product_model.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Product Service
 ///
@@ -36,7 +37,7 @@ class ProductService {
           .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
           .toList();
     } catch (e) {
-      print('Error fetching products: $e');
+      AppLogger.debug('Error fetching products: $e');
       return [];
     }
   }
@@ -56,7 +57,7 @@ class ProductService {
       }
       return null;
     }).handleError((error) {
-      print('Error watching product: $error');
+      AppLogger.debug('Error watching product: $error');
       return null;
     });
   }
@@ -73,7 +74,7 @@ class ProductService {
       }
       return null;
     } catch (e) {
-      print('Error fetching product: $e');
+      AppLogger.debug('Error fetching product: $e');
       return null;
     }
   }
@@ -91,7 +92,7 @@ class ProductService {
           .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
           .toList();
     }).handleError((error) {
-      print('Error watching products by category: $error');
+      AppLogger.debug('Error watching products by category: $error');
       return <ProductModel>[];
     });
   }
@@ -120,7 +121,7 @@ class ProductService {
           .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
           .toList();
     }).handleError((error) {
-      print('Error searching products: $error');
+      AppLogger.debug('Error searching products: $error');
       return <ProductModel>[];
     });
   }
@@ -151,7 +152,7 @@ class ProductService {
           .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
           .toList();
     }).handleError((error) {
-      print('Error searching products by category: $error');
+      AppLogger.debug('Error searching products by category: $error');
       return <ProductModel>[];
     });
   }
@@ -181,7 +182,7 @@ class ProductService {
 
       return results;
     } catch (e) {
-      print('Error searching products: $e');
+      AppLogger.debug('Error searching products: $e');
       return [];
     }
   }
@@ -212,7 +213,7 @@ class ProductService {
               product.description.toLowerCase().contains(queryLower))
           .toList();
     }).handleError((error) {
-      print('Error searching products by category: $error');
+      AppLogger.debug('Error searching products by category: $error');
       return <ProductModel>[];
     });
   }
@@ -230,7 +231,7 @@ class ProductService {
           .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
           .toList();
     } catch (e) {
-      print('Error fetching discounted products: $e');
+      AppLogger.debug('Error fetching discounted products: $e');
       return [];
     }
   }
@@ -248,7 +249,7 @@ class ProductService {
           .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
           .toList();
     } catch (e) {
-      print('Error fetching in-stock products: $e');
+      AppLogger.debug('Error fetching in-stock products: $e');
       return [];
     }
   }
@@ -268,7 +269,7 @@ class ProductService {
           .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
           .toList();
     }).handleError((error) {
-      print('Error watching all products: $error');
+      AppLogger.debug('Error watching all products: $error');
       return <ProductModel>[];
     });
   }
@@ -308,10 +309,10 @@ class ProductService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('Product created with ID: ${docRef.id}');
+      AppLogger.debug('Product created with ID: ${docRef.id}');
       return docRef.id;
     } catch (e) {
-      print('Error creating product: $e');
+      AppLogger.debug('Error creating product: $e');
       return null;
     }
   }
@@ -356,10 +357,10 @@ class ProductService {
           .doc(productId)
           .update(updateData);
 
-      print('Product $productId updated');
+      AppLogger.debug('Product $productId updated');
       return true;
     } catch (e) {
-      print('Error updating product: $e');
+      AppLogger.debug('Error updating product: $e');
       return false;
     }
   }
@@ -375,10 +376,10 @@ class ProductService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('Stock updated for product $productId: $newStock');
+      AppLogger.debug('Stock updated for product $productId: $newStock');
       return true;
     } catch (e) {
-      print('Error updating stock: $e');
+      AppLogger.debug('Error updating stock: $e');
       return false;
     }
   }
@@ -388,10 +389,10 @@ class ProductService {
     try {
       await _firestore.collection(_collectionPath).doc(productId).delete();
 
-      print('Product $productId deleted');
+      AppLogger.debug('Product $productId deleted');
       return true;
     } catch (e) {
-      print('Error deleting product: $e');
+      AppLogger.debug('Error deleting product: $e');
       return false;
     }
   }
@@ -409,8 +410,10 @@ class ProductService {
       final snapshot = await query.count().get();
       return snapshot.count ?? 0;
     } catch (e) {
-      print('Error getting product count: $e');
+      AppLogger.debug('Error getting product count: $e');
       return 0;
     }
   }
 }
+
+

@@ -5,6 +5,7 @@ import 'package:slvh_app/features/auth/services/otp_resend_service.dart';
 import 'package:slvh_app/features/auth/services/session_manager_service.dart';
 import 'package:slvh_app/features/notifications/services/notification_service.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/utils/secure_logger.dart';
 
 // String extension for validation
 extension StringValidation on String {
@@ -53,14 +54,14 @@ class AuthService {
 
     // Check if it's a test phone number (works offline)
     if (_isTestPhoneNumber(normalised)) {
-      print('✅ Test phone number detected: $normalised');
+      AppLogger.debug('✅ Test phone number detected: $normalised');
       // For test numbers, generate a fake verification ID and proceed
       onCodeSent('test-verification-id-$normalised', null);
       return;
     }
 
     // For development: any other number also works in test mode
-    print('📱 Development mode: Accepting phone number $normalised');
+    AppLogger.debug('📱 Development mode: Accepting phone number $normalised');
     onCodeSent('dev-verification-id-$normalised', null);
     
     // Production code below (uncomment when Firebase is configured)
@@ -77,7 +78,7 @@ class AuthService {
           } catch (_) {}
         },
         verificationFailed: (FirebaseAuthException e) {
-          print('❌ Phone verification failed: ${e.code} - ${e.message}');
+          AppLogger.debug('❌ Phone verification failed: ${e.code} - ${e.message}');
           
           // Handle common Firebase errors with user-friendly messages
           if (e.code == 'billing-not-enabled') {
@@ -94,7 +95,7 @@ class AuthService {
         codeAutoRetrievalTimeout: (_) {},
       );
     } catch (e) {
-      print('❌ Failed to send OTP: $e');
+      AppLogger.debug('❌ Failed to send OTP: $e');
       onError('Failed to send OTP: ${e.toString()}');
     }
     */
@@ -137,7 +138,7 @@ class AuthService {
               : '+91${phoneNumber.replaceAll(RegExp(r'\D'), '')}';
           await _saveCustomerSession(phone);
           await _otpResendService.resetResendCounter(phone);
-          print('✅ Development OTP verified successfully for $phone');
+          AppLogger.debug('✅ Development OTP verified successfully for $phone');
           return true;
         } else {
           onError('Invalid OTP. Please enter a 6-digit code.');
@@ -183,7 +184,7 @@ class AuthService {
     required Function(String errorMessage) onError,
   }) async {
     try {
-      print('📲 Attempting OTP resend for $phoneNumber...');
+      AppLogger.debug('📲 Attempting OTP resend for $phoneNumber...');
 
       // Check if it's a test phone number
       final normalised = phoneNumber.startsWith('+')
@@ -191,7 +192,7 @@ class AuthService {
           : '+91${phoneNumber.replaceAll(RegExp(r'\D'), '')}';
 
       if (_isTestPhoneNumber(normalised)) {
-        print('✅ Test phone number resend for: $normalised');
+        AppLogger.debug('✅ Test phone number resend for: $normalised');
         onCodeSent('test-verification-id-$normalised', null);
         return true;
       }
@@ -211,14 +212,14 @@ class AuthService {
             final result = await _auth.signInWithCredential(credential);
             final phone = result.user?.phoneNumber ?? normalised;
             await _saveCustomerSession(phone);
-            print('✅ OTP auto-verified during resend');
+            AppLogger.debug('✅ OTP auto-verified during resend');
           } catch (_) {}
         },
         verificationFailed: (FirebaseAuthException e) {
           onError(e.message ?? 'Phone verification failed.');
         },
         codeSent: (String verificationId, int? newResendToken) {
-          print('✅ OTP resent successfully for $normalised');
+          AppLogger.debug('✅ OTP resent successfully for $normalised');
           onCodeSent(verificationId, newResendToken);
         },
         codeAutoRetrievalTimeout: (_) {},
@@ -227,12 +228,12 @@ class AuthService {
       return true;
     } on OTPResendException catch (e) {
       // Rate limiting error
-      print('❌ OTP resend rate-limited: ${e.message}');
+      AppLogger.debug('❌ OTP resend rate-limited: ${e.message}');
       onError(e.message);
       rethrow;
     } catch (e) {
       final msg = 'Failed to resend OTP: ${e.toString()}';
-      print('❌ $msg');
+      AppLogger.debug('❌ $msg');
       onError(msg);
       return false;
     }
@@ -351,7 +352,7 @@ class AuthService {
       onSessionExpired: onSessionExpired,
       onSessionValid: onSessionValid,
     );
-    print('🔐 AuthService: Session manager initialized');
+    AppLogger.debug('🔐 AuthService: Session manager initialized');
   }
 
   /// Get a fresh Firebase ID token before Firestore operations
@@ -496,9 +497,9 @@ class AuthService {
       // Save FCM token for the admin user
       try {
         await NotificationService().saveFCMTokenForUser(adminUserId);
-        print('✅ FCM token saved for admin user: $adminUserId');
+        AppLogger.debug('✅ FCM token saved for admin user: $adminUserId');
       } catch (e) {
-        print('⚠️ Failed to save FCM token for admin: $e');
+        AppLogger.debug('⚠️ Failed to save FCM token for admin: $e');
         // Don't throw - continue with login even if FCM fails
       }
     } catch (e) {
@@ -506,3 +507,5 @@ class AuthService {
     }
   }
 }
+
+

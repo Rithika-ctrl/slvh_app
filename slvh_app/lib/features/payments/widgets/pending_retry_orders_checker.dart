@@ -56,7 +56,7 @@ mixin PendingRetryOrdersCheckerMixin<T extends StatefulWidget>
         },
       );
     } catch (e) {
-      print('Error checking pending retry orders: $e');
+      AppLogger.debug('Error checking pending retry orders: $e');
       // Silently fail - don't disrupt user experience
     }
   }
@@ -127,7 +127,7 @@ class PendingRetryOrdersInitializer {
         },
       );
     } catch (e) {
-      print('Error initializing pending retry check: $e');
+      AppLogger.debug('Error initializing pending retry check: $e');
     }
   }
 }
@@ -162,3 +162,4 @@ class PendingRetryOrdersInitializer {
 ///   }
 /// }
 /// ```
+

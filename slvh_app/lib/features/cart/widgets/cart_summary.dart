@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:slvh_app/features/cart/providers/cart_provider.dart';
 import 'package:slvh_app/features/settings/services/settings_service.dart';
 import 'minimum_order_banner.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Cart summary widget showing totals and checkout button
 class CartSummary extends StatefulWidget {
@@ -35,7 +36,7 @@ class _CartSummaryState extends State<CartSummary> {
         _minOrderValue = settings.minOrderValue;
       });
     } catch (e) {
-      print('Error loading min order value: $e');
+      AppLogger.debug('Error loading min order value: $e');
     }
   }
 
@@ -179,3 +180,5 @@ class _SummaryRow extends StatelessWidget {
     );
   }
 }
+
+

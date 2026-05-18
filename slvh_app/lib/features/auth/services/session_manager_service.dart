@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import '../../../core/utils/secure_logger.dart';
 /// Session Management Service
 ///
 /// Handles:
@@ -50,26 +51,26 @@ class SessionManagerService {
     _onSessionExpired = onSessionExpired;
     _onSessionValid = onSessionValid;
 
-    print('🔐 SessionManager: Initializing auth state listener');
+    AppLogger.debug('🔐 SessionManager: Initializing auth state listener');
 
     // Listen to Firebase auth state changes
     _authStateSubscription = _auth.authStateChanges().listen(
       (User? user) {
         if (user != null) {
-          print('✅ SessionManager: User authenticated (${user.phoneNumber ?? user.email})');
+          AppLogger.debug('✅ SessionManager: User authenticated (${user.phoneNumber ?? user.email})');
           _authStateController.add(AuthState.authenticated);
           _onSessionValid?.call();
           
           // Refresh token on auth state change (Firebase auto-refresh)
           _refreshToken(forceRefresh: true);
         } else {
-          print('❌ SessionManager: User logged out');
+          AppLogger.debug('❌ SessionManager: User logged out');
           _authStateController.add(AuthState.unauthenticated);
           _onSessionExpired?.call();
         }
       },
       onError: (error) {
-        print('❌ SessionManager: Auth state error: $error');
+        AppLogger.debug('❌ SessionManager: Auth state error: $error');
         _authStateController.addError(error);
       },
     );
@@ -93,25 +94,25 @@ class SessionManagerService {
     final user = _auth.currentUser;
     
     if (user == null) {
-      print('⚠️ SessionManager: No user authenticated');
+      AppLogger.debug('⚠️ SessionManager: No user authenticated');
       return null;
     }
 
     try {
       // Get a fresh token (force refresh if needed)
       final token = await user.getIdToken(true);
-      print('✅ SessionManager: Token refreshed successfully');
+      AppLogger.debug('✅ SessionManager: Token refreshed successfully');
       
       _lastTokenRefresh = DateTime.now();
       _tokenRefreshController.add(TokenRefreshEvent.success);
       
       return token;
     } on FirebaseAuthException catch (e) {
-      print('❌ SessionManager: Token refresh failed (${e.code}): ${e.message}');
+      AppLogger.debug('❌ SessionManager: Token refresh failed (${e.code}): ${e.message}');
       
       // Handle specific auth exceptions
       if (e.code == 'user-disabled' || e.code == 'invalid-user-token') {
-        print('🔴 SessionManager: User token invalid, session expired');
+        AppLogger.debug('🔴 SessionManager: User token invalid, session expired');
         _authStateController.add(AuthState.expired);
         _onSessionExpired?.call();
       }
@@ -119,7 +120,7 @@ class SessionManagerService {
       _tokenRefreshController.add(TokenRefreshEvent.failure);
       rethrow;
     } catch (e) {
-      print('❌ SessionManager: Unexpected error during token refresh: $e');
+      AppLogger.debug('❌ SessionManager: Unexpected error during token refresh: $e');
       _tokenRefreshController.add(TokenRefreshEvent.failure);
       rethrow;
     }
@@ -132,7 +133,7 @@ class SessionManagerService {
     final user = _auth.currentUser;
     
     if (user == null) {
-      print('⚠️ SessionManager: No user authenticated');
+      AppLogger.debug('⚠️ SessionManager: No user authenticated');
       return false;
     }
 
@@ -149,7 +150,7 @@ class SessionManagerService {
       await getValidToken();
       return true;
     } catch (e) {
-      print('❌ SessionManager: Session validation failed: $e');
+      AppLogger.debug('❌ SessionManager: Session validation failed: $e');
       return false;
     }
   }
@@ -172,13 +173,13 @@ class SessionManagerService {
     }
 
     try {
-      print('🔄 SessionManager: Refreshing token...');
+      AppLogger.debug('🔄 SessionManager: Refreshing token...');
       await user.getIdToken(true);
       _lastTokenRefresh = DateTime.now();
-      print('✅ SessionManager: Token refresh successful');
+      AppLogger.debug('✅ SessionManager: Token refresh successful');
       _tokenRefreshController.add(TokenRefreshEvent.success);
     } catch (e) {
-      print('❌ SessionManager: Token refresh error: $e');
+      AppLogger.debug('❌ SessionManager: Token refresh error: $e');
       _tokenRefreshController.add(TokenRefreshEvent.failure);
     }
   }
@@ -194,7 +195,7 @@ class SessionManagerService {
     try {
       return await user.getIdToken(false); // false = don't force refresh
     } catch (e) {
-      print('⚠️ SessionManager: Failed to get current token: $e');
+      AppLogger.debug('⚠️ SessionManager: Failed to get current token: $e');
       return null;
     }
   }
@@ -209,7 +210,7 @@ class SessionManagerService {
 
   /// Cleanup: dispose subscriptions and close streams
   void dispose() {
-    print('🔐 SessionManager: Disposing resources');
+    AppLogger.debug('🔐 SessionManager: Disposing resources');
     _authStateSubscription?.cancel();
     _authStateController.close();
     _tokenRefreshController.close();
@@ -228,3 +229,4 @@ enum TokenRefreshEvent {
   success,  // Token successfully refreshed
   failure,  // Token refresh failed
 }
+

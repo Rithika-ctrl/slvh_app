@@ -4,13 +4,14 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:slvh_app/features/notifications/models/notification_model.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Top-level background message handler
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('✅ Handling background message in native code');
-  print('Title: ${message.notification?.title}');
-  print('Body: ${message.notification?.body}');
+  AppLogger.debug('✅ Handling background message in native code');
+  AppLogger.debug('Title: ${message.notification?.title}');
+  AppLogger.debug('Body: ${message.notification?.body}');
 }
 
 /// Service for managing Firebase Cloud Messaging (FCM) and local notifications
@@ -46,9 +47,9 @@ class NotificationService {
       );
 
       if (settings.authorizationStatus != AuthorizationStatus.denied) {
-        print('✅ Notification permissions granted');
+        AppLogger.debug('✅ Notification permissions granted');
       } else {
-        print('⚠️ Notification permissions denied');
+        AppLogger.debug('⚠️ Notification permissions denied');
       }
 
       // Initialize local notifications
@@ -59,7 +60,7 @@ class NotificationService {
 
       // Re-save token whenever FCM rotates it (important for delivery reliability)
       _fcm.onTokenRefresh.listen((newToken) async {
-        print('🔄 FCM token refreshed — re-saving for current user');
+        AppLogger.debug('🔄 FCM token refreshed — re-saving for current user');
         // saveFCMTokenForUser is called again by the auth layer on next login.
         // For already-logged-in users we re-save here directly.
         try {
@@ -69,10 +70,10 @@ class NotificationService {
               {'fcmToken': newToken, 'updatedAt': DateTime.now()},
               SetOptions(merge: true),
             );
-            print('✅ Refreshed FCM token saved for user: $uid');
+            AppLogger.debug('✅ Refreshed FCM token saved for user: $uid');
           }
         } catch (e) {
-          print('⚠️ Failed to save refreshed FCM token: $e');
+          AppLogger.debug('⚠️ Failed to save refreshed FCM token: $e');
         }
       });
 
@@ -86,9 +87,9 @@ class NotificationService {
       FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
 
       _isInitialized = true;
-      print('✅ NotificationService initialized successfully');
+      AppLogger.debug('✅ NotificationService initialized successfully');
     } catch (e) {
-      print('❌ Failed to initialize NotificationService: $e');
+      AppLogger.debug('❌ Failed to initialize NotificationService: $e');
     }
   }
 
@@ -126,7 +127,7 @@ class NotificationService {
     // Token is written in saveFCMTokenForUser() post-login.
     // Cloud Function reads fcmToken from users/{uid}, so do not write to any
     // other path here (e.g. app_settings/fcm_tokens) as it won't be read.
-    print('ℹ️ FCM token will be saved after login via saveFCMTokenForUser()');
+    AppLogger.debug('ℹ️ FCM token will be saved after login via saveFCMTokenForUser()');
   }
 
   /// Save FCM token for authenticated user
@@ -139,19 +140,19 @@ class NotificationService {
           'updatedAt': DateTime.now(),
         }, SetOptions(merge: true));
 
-        print('✅ FCM token saved for user: $userId');
+        AppLogger.debug('✅ FCM token saved for user: $userId');
       }
     } catch (e) {
-      print('❌ Failed to save FCM token for user: $e');
+      AppLogger.debug('❌ Failed to save FCM token for user: $e');
     }
   }
 
   /// Handle foreground messages
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    print('✅ Foreground message received:');
-    print('Title: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
+    AppLogger.debug('✅ Foreground message received:');
+    AppLogger.debug('Title: ${message.notification?.title}');
+    AppLogger.debug('Body: ${message.notification?.body}');
+    AppLogger.debug('Data: ${message.data}');
 
     // Show local notification
     await _showLocalNotification(message);
@@ -159,7 +160,7 @@ class NotificationService {
 
   /// Handle notification tap when app is in background
   void _handleMessageOpenedApp(RemoteMessage message) {
-    print('✅ Notification tapped (app in background)');
+    AppLogger.debug('✅ Notification tapped (app in background)');
     _navigateToOrderDetail(message.data);
   }
 
@@ -167,7 +168,7 @@ class NotificationService {
   Future<void> _onLocalNotificationTap(
     NotificationResponse notificationResponse,
   ) async {
-    print('✅ Local notification tapped');
+    AppLogger.debug('✅ Local notification tapped');
     // Extract payload and navigate
     final payload = notificationResponse.payload;
     if (payload != null) {
@@ -186,7 +187,7 @@ class NotificationService {
     final orderId = data['orderId'] as String?;
     if (orderId != null && orderId.isNotEmpty) {
       // This will be called from GoRouter context in real implementation
-      print('📱 Navigate to order detail: $orderId');
+      AppLogger.debug('📱 Navigate to order detail: $orderId');
     }
   }
 
@@ -272,9 +273,9 @@ class NotificationService {
         payload: payload,
       );
 
-      print('✅ Local notification sent: $title');
+      AppLogger.debug('✅ Local notification sent: $title');
     } catch (e) {
-      print('❌ Failed to send local notification: $e');
+      AppLogger.debug('❌ Failed to send local notification: $e');
     }
   }
 
@@ -306,9 +307,9 @@ class NotificationService {
       );
 
       await notificationRef.set(notification.toFirestore());
-      print('✅ Notification saved to Firestore: $title');
+      AppLogger.debug('✅ Notification saved to Firestore: $title');
     } catch (e) {
-      print('❌ Failed to save notification: $e');
+      AppLogger.debug('❌ Failed to save notification: $e');
     }
   }
 
@@ -327,7 +328,7 @@ class NotificationService {
           .map((doc) => NotificationModel.fromFirestore(doc.id, doc.data()))
           .toList();
     } catch (e) {
-      print('❌ Failed to fetch notifications: $e');
+      AppLogger.debug('❌ Failed to fetch notifications: $e');
       return [];
     }
   }
@@ -358,9 +359,9 @@ class NotificationService {
           .doc(notificationId)
           .update({'isRead': true});
 
-      print('✅ Notification marked as read');
+      AppLogger.debug('✅ Notification marked as read');
     } catch (e) {
-      print('❌ Failed to mark notification as read: $e');
+      AppLogger.debug('❌ Failed to mark notification as read: $e');
     }
   }
 
@@ -374,9 +375,9 @@ class NotificationService {
           .doc(notificationId)
           .delete();
 
-      print('✅ Notification deleted');
+      AppLogger.debug('✅ Notification deleted');
     } catch (e) {
-      print('❌ Failed to delete notification: $e');
+      AppLogger.debug('❌ Failed to delete notification: $e');
     }
   }
 
@@ -388,9 +389,9 @@ class NotificationService {
         'updatedAt': DateTime.now(),
       });
 
-      print('✅ Notifications enabled for user: $userId');
+      AppLogger.debug('✅ Notifications enabled for user: $userId');
     } catch (e) {
-      print('❌ Failed to enable notifications: $e');
+      AppLogger.debug('❌ Failed to enable notifications: $e');
     }
   }
 
@@ -402,9 +403,9 @@ class NotificationService {
         'updatedAt': DateTime.now(),
       });
 
-      print('✅ Notifications disabled for user: $userId');
+      AppLogger.debug('✅ Notifications disabled for user: $userId');
     } catch (e) {
-      print('❌ Failed to disable notifications: $e');
+      AppLogger.debug('❌ Failed to disable notifications: $e');
     }
   }
 
@@ -423,3 +424,4 @@ class NotificationService {
     }
   }
 }
+

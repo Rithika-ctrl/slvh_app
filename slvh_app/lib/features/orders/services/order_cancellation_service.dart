@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:slvh_app/features/inventory/services/stock_service.dart';
 import 'package:slvh_app/features/orders/models/order_model.dart';
 import 'package:slvh_app/features/pickup_slots/services/slot_service.dart';
+import '../../../core/utils/secure_logger.dart';
 
 /// Service for handling order cancellations
 /// Allows customers to cancel orders with payment_verification_pending status
@@ -82,9 +83,9 @@ class OrderCancellationService {
       for (final item in order.items) {
         try {
           await _stockService.releaseStock(item.productId, item.quantity);
-          print('✅ Stock restored: +${item.quantity} for ${item.productId}');
+          AppLogger.debug('✅ Stock restored: +${item.quantity} for ${item.productId}');
         } catch (e) {
-          print('⚠️ Warning: Failed to restore stock for ${item.productId}: $e');
+          AppLogger.debug('⚠️ Warning: Failed to restore stock for ${item.productId}: $e');
           // Log but continue — order is already cancelled; partial stock restore
           // is better than blocking the cancellation entirely.
         }
@@ -94,9 +95,9 @@ class OrderCancellationService {
       try {
         final pickupDate = DateTime.parse(order.pickupDate);
         await _slotService.cancelSlotBooking(pickupDate, order.pickupSlotId);
-        print('✅ Slot booking cancelled: ${order.pickupSlotId}');
+        AppLogger.debug('✅ Slot booking cancelled: ${order.pickupSlotId}');
       } catch (e) {
-        print('⚠️ Warning: Failed to cancel slot booking: $e');
+        AppLogger.debug('⚠️ Warning: Failed to cancel slot booking: $e');
         // We don't rethrow here because the order status and stock have already been updated
       }
 
@@ -188,3 +189,4 @@ class OrderCancellationService {
     }
   }
 }
+

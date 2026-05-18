@@ -8,6 +8,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../services/auth_service.dart';
+import '../../../core/utils/secure_logger.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
@@ -72,7 +73,7 @@ class _OTPScreenState extends State<OTPScreen>
       final count = await _otpResendService.getResendCount(widget.phoneNumber);
       setState(() => _resendAttempts = count);
     } catch (e) {
-      print('⚠️ Failed to load resend attempts: $e');
+      AppLogger.debug('⚠️ Failed to load resend attempts: $e');
     }
   }
 
@@ -585,3 +586,5 @@ class _BackButton extends StatelessWidget {
     );
   }
 }
+
+
