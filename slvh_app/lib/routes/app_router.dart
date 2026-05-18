@@ -282,7 +282,7 @@ class AppRouter {
                 final loadedProduct = snapshot.data;
                 if (loadedProduct == null) {
                   return const Scaffold(
-                    body: const NotFoundWidget(itemName: 'Product'),
+                    body: NotFoundWidget(itemName: 'Product'),
                   );
                 }
 
@@ -326,7 +326,7 @@ class AppRouter {
             final cartSummary = state.extra as Map<String, dynamic>?;
             if (cartSummary == null) {
               return const Scaffold(
-                body: const NotFoundWidget(itemName: 'Cart'),
+                body: NotFoundWidget(itemName: 'Cart'),
               );
             }
             return CheckoutScreen(cartSummary: cartSummary);
@@ -388,7 +388,7 @@ class AppRouter {
             final order = state.extra as OrderModel?;
             if (order == null) {
               return const Scaffold(
-                body: const NotFoundWidget(itemName: 'Order'),
+                body: NotFoundWidget(itemName: 'Order'),
               );
             }
             return OrderSummaryScreen(
