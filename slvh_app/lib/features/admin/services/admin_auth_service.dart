@@ -1,5 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Session keys must match AuthService for cross-system compatibility
+const String _adminLoginKey = 'admin_logged_in';
+const String _adminEmailKey = 'admin_email';
 
 class AdminAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -35,6 +40,15 @@ class AdminAuthService {
           await _auth.signOut();
           return null;
         }
+
+        // Persist admin session to SharedPreferences so router guards
+        // (which use AuthService.isAdminLoggedIn()) will recognize this login.
+        // This ensures AdminAuthService and AuthService systems are compatible.
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool(_adminLoginKey, true);
+          await prefs.setString(_adminEmailKey, email);
+        } catch (_) {}
 
         return user;
       }
@@ -77,5 +91,11 @@ class AdminAuthService {
   // Sign out
   Future<void> signOut() async {
     await _auth.signOut();
+    // Also clear session from SharedPreferences for cross-system compatibility
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_adminLoginKey);
+      await prefs.remove(_adminEmailKey);
+    } catch (_) {}
   }
 }
