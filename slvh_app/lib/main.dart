@@ -8,6 +8,7 @@ import 'connectivity/connectivity_service.dart';      // ← Feature 11
 import 'connectivity/pending_write_queue.dart';        // ← Feature 11
 import 'features/cart/services/cart_service.dart';    // ← Feature 11
 import 'features/products/services/cloudinary_config_service.dart';
+import 'core/constants/legal_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,12 @@ void main() async {
 
   // Initialize Cloudinary configuration from Firebase Remote Config
   await CloudinaryConfigService().initialize();
+
+  // Validate legal configuration (Privacy Policy & Terms required for Play Store)
+  if (!LegalConfig.isConfigured) {
+    print('⚠️ CRITICAL: ${LegalConfig.getConfigStatus()}');
+    print('   Update lib/core/constants/legal_config.dart before production deployment');
+  }
 
   // Initialize Notifications
   await NotificationService().initialize();

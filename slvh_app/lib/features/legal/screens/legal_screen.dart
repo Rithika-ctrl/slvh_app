@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/legal_config.dart';
 import '../../../shared/widgets/gradient_background.dart';
 
 enum LegalDocType { privacyPolicy, termsOfService }
@@ -20,22 +21,9 @@ class _LegalScreenState extends State<LegalScreen> {
   bool _isLoading = true;
   bool _hasError = false;
 
-  // ── URLs ─────────────────────────────────────────────────────────────────
-  // TODO: Replace YOUR_PROJECT_ID with your actual Firebase project ID.
-  // 1. Find your project ID in the Firebase Console → Project Settings.
-  // 2. Deploy the HTML pages:  firebase deploy --only hosting
-  // 3. Update the two constants below, then hot-restart the app.
-  // ─────────────────────────────────────────────────────────────────────────
-  static const String _firebaseProjectId = 'YOUR_PROJECT_ID'; // ← change this
-
-  static const String _privacyPolicyUrl =
-      'https://$_firebaseProjectId.web.app/privacy-policy';
-  static const String _termsUrl =
-      'https://$_firebaseProjectId.web.app/terms-of-service';
-
   String get _url => widget.docType == LegalDocType.privacyPolicy
-      ? _privacyPolicyUrl
-      : _termsUrl;
+      ? LegalConfig.privacyPolicyUrl
+      : LegalConfig.termsOfServiceUrl;
 
   String get _title => widget.docType == LegalDocType.privacyPolicy
       ? 'Privacy Policy'
@@ -44,6 +32,13 @@ class _LegalScreenState extends State<LegalScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // ⚠️ CRITICAL: Validate legal URLs are configured
+    if (!LegalConfig.isConfigured) {
+      print('⚠️ CRITICAL: Legal URLs not properly configured!');
+      print(LegalConfig.getConfigStatus());
+    }
+    
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(AppColors.bgCream)
