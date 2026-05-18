@@ -6,6 +6,7 @@ import 'package:slvh_app/features/orders/widgets/status_badge.dart';
 import 'package:slvh_app/features/orders/widgets/cancel_order_dialog.dart';
 import 'package:slvh_app/features/payments/services/payment_rejection_service.dart';
 import 'package:slvh_app/features/payments/screens/refund_instructions_screen.dart';
+import 'package:slvh_app/features/payments/widgets/payment_retry_bottom_sheet.dart';
 import 'package:slvh_app/features/settings/services/settings_service.dart';
 import 'package:slvh_app/features/reviews/widgets/rating_dialog.dart';
 import 'package:slvh_app/features/auth/services/auth_service.dart';
@@ -663,15 +664,53 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           order: order,
           payment: payment,
           onRetryPayment: () {
-            // Navigate to payment screen for retry
+            // Close refund screen and show payment retry bottom sheet
             Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Retry payment flow (TODO: implement)'),
-              ),
-            );
+            _showPaymentRetryBottomSheet(context, order, payment);
           },
         ),
+      ),
+    );
+  }
+
+  /// Show payment retry bottom sheet to allow customer to retry payment upload
+  void _showPaymentRetryBottomSheet(
+    BuildContext context,
+    OrderModel order,
+    dynamic payment,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      builder: (context) => PaymentRetryBottomSheet(
+        order: order,
+        paymentReference: payment?['id'] ?? '',
+        onRetry: () {
+          // Navigate to payment screen to retry upload
+          Navigator.of(context).pop();
+          context.push(
+            '/checkout',
+            extra: {
+              'orderId': order.id,
+              'isRetry': true,
+            },
+          );
+        },
+        onContactSupport: () {
+          // TODO: Implement contact support flow
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Support contact coming soon'),
+            ),
+          );
+        },
       ),
     );
   }
