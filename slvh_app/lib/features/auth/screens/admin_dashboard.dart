@@ -5,14 +5,14 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../services/auth_service.dart';
 
-class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+class AuthAdminDashboard extends StatefulWidget {
+  const AuthAdminDashboard({super.key});
 
   @override
-  State<AdminDashboard> createState() => _AdminDashboardState();
+  State<AuthAdminDashboard> createState() => _AuthAdminDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard> {
+class _AuthAdminDashboardState extends State<AuthAdminDashboard> {
   final AuthService _authService = AuthService();
   String? _adminEmail;
 

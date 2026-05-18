@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/services/auth_service.dart';
 import '../../features/auth/screens/phone_input_screen.dart';
-import '../../features/auth/screens/home_screen.dart';
-import '../../features/auth/screens/admin_dashboard.dart';
+import '../../features/home/screens/home_screen.dart';
+import '../../features/admin/screens/admin_dashboard_screen.dart';
 
 /// AuthWrapper Widget
 /// 
@@ -84,7 +84,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         
         // Priority 1: Check admin access
         if (isAdminLoggedIn && role == 'admin') {
-          return const AdminDashboard();
+          return const AdminDashboardScreen();
         }
 
         // Priority 2: Check customer access
