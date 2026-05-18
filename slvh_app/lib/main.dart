@@ -8,8 +8,10 @@ import 'connectivity/connectivity_service.dart';      // ← Feature 11
 import 'connectivity/pending_write_queue.dart';        // ← Feature 11
 import 'features/cart/services/cart_service.dart';    // ← Feature 11
 import 'features/products/services/cloudinary_config_service.dart';
+import 'features/auth/services/auth_service.dart';    // ← H-3 Security Fix
 import 'core/constants/legal_config.dart';
 import 'core/utils/secure_logger.dart';
+import 'core/services/app_check_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +20,14 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize Firebase App Check (H-2 Security Fix)
+  // Must be called AFTER Firebase.initializeApp() and BEFORE Firestore operations
+  await AppCheckService.initialize();
+
+  // Initialize admin accounts in Firestore (H-3 Security Fix)
+  // Allows runtime admin revocation without code changes
+  await AuthService.initializeAdminAccounts();
 
   // Initialize Cloudinary configuration from Firebase Remote Config
   await CloudinaryConfigService().initialize();

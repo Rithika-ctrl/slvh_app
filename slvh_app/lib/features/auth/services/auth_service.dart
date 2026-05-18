@@ -33,9 +33,13 @@ class AuthService {
   static const String _adminLoginKey   = 'admin_logged_in';
   static const String _adminEmailKey   = 'admin_email';
 
-  // ─── Admin e-mail whitelist ───────────────────────────────────
-  // Real admin accounts must exist in Firebase Authentication.
-  static const List<String> _adminEmailWhitelist = [
+  // ─── Admin Accounts Configuration ────────────────────────────
+  // MIGRATED TO FIRESTORE: Admin accounts are now stored in Firestore
+  // (collection: admin_accounts) instead of hardcoded list.
+  // This allows runtime revocation without code changes.
+  // 
+  // Fallback whitelist used only if Firestore is unavailable:
+  static const List<String> _adminEmailWhitelistFallback = [
     'admin@smartshop.com',
   ];
 
@@ -256,15 +260,66 @@ class AuthService {
 
       final signedInEmail = result.user?.email ?? '';
 
-      if (!_adminEmailWhitelist
-          .any((e) => e.toLowerCase() == signedInEmail.toLowerCase())) {
-        await _auth.signOut();
-        onError('This account does not have admin access.');
-        return false;
-      }
+      // SECURITY (H-3): Check if this email is a registered admin account in Firestore
+      // and is enabled (not revoked). This allows runtime revocation without code changes.
+      try {
+        final adminDoc = await _db
+            .collection('admin_accounts')
+            .doc(signedInEmail.toLowerCase())
+            .get();
 
-      await _saveAdminSession(signedInEmail);
-      return true;
+        if (!adminDoc.exists) {
+          await _auth.signOut();
+          onError('This account does not have admin access.');
+          AppLogger.warning(
+            '🔐 Admin login rejected: Email not in admin_accounts collection ($signedInEmail)',
+          );
+          return false;
+        }
+
+        final isEnabled = adminDoc.get('enabled') as bool? ?? false;
+        if (!isEnabled) {
+          await _auth.signOut();
+          onError('This admin account has been disabled.');
+          AppLogger.warning(
+            '🔐 Admin login rejected: Account disabled ($signedInEmail)',
+          );
+          return false;
+        }
+
+        // ✅ Admin account exists and is enabled - log them in
+        await _saveAdminSession(signedInEmail);
+        
+        // Update last login timestamp for audit trail
+        await _db
+            .collection('admin_accounts')
+            .doc(signedInEmail.toLowerCase())
+            .update({
+          'lastLogin': FieldValue.serverTimestamp(),
+        }).catchError((_) {
+          // Non-fatal if timestamp update fails
+          AppLogger.debug('ℹ️ Could not update admin lastLogin timestamp');
+        });
+
+        AppLogger.success('✅ Admin login successful: $signedInEmail');
+        return true;
+      } on FirebaseException catch (firestoreError) {
+        // Firestore error - fall back to hardcoded whitelist for bootstrap
+        AppLogger.warning(
+          '⚠️ Firestore error during admin validation, using fallback whitelist',
+        );
+        AppLogger.debug('Firestore error details: $firestoreError');
+
+        if (!_adminEmailWhitelistFallback
+            .any((e) => e.toLowerCase() == signedInEmail.toLowerCase())) {
+          await _auth.signOut();
+          onError('This account does not have admin access.');
+          return false;
+        }
+
+        await _saveAdminSession(signedInEmail);
+        return true;
+      }
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'user-not-found':
@@ -307,11 +362,35 @@ class AuthService {
   Future<bool> isAdminLoggedIn() async {
     if (_auth.currentUser?.email != null) {
       final email = _auth.currentUser!.email!;
-      if (_adminEmailWhitelist
-          .any((e) => e.toLowerCase() == email.toLowerCase())) {
-        return true;
+      
+      // SECURITY (H-3): Check Firestore to verify admin account is still enabled
+      try {
+        final adminDoc = await _db
+            .collection('admin_accounts')
+            .doc(email.toLowerCase())
+            .get();
+
+        if (adminDoc.exists) {
+          final isEnabled = adminDoc.get('enabled') as bool? ?? false;
+          if (isEnabled) {
+            return true;
+          } else {
+            // Admin account has been disabled - sign them out
+            await signOut();
+            AppLogger.warning(
+              '🔐 Admin session revoked: Account disabled in Firestore ($email)',
+            );
+            return false;
+          }
+        }
+      } on FirebaseException catch (e) {
+        // Firestore error - fall back to SharedPreferences
+        AppLogger.debug(
+          '⚠️ Firestore error during admin session check: ${e.code}',
+        );
       }
     }
+
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool(_adminLoginKey) ?? false;
@@ -506,6 +585,108 @@ class AuthService {
       throw Exception('Failed to save admin session: ${e.toString()}');
     }
   }
+
+  // =========================================================
+  // ADMIN ACCOUNTS INITIALIZATION (SECURITY FIX H-3)
+  // =========================================================
+
+  /// Initialize default admin accounts in Firestore
+  ///
+  /// SECURITY (H-3): This MUST be called during app setup to create the
+  /// admin_accounts collection. Admin access is verified against Firestore,
+  /// allowing runtime revocation without code changes.
+  ///
+  /// Default: Creates admin@smartshop.com as enabled admin
+  /// Admin Revocation: Disable in Firebase Console (set 'enabled' to false)
+  static Future<void> initializeAdminAccounts() async {
+    try {
+      AppLogger.debug('🔐 Initializing admin accounts in Firestore...');
+
+      final db = FirebaseFirestore.instance;
+      final adminAccountsRef = db.collection('admin_accounts');
+
+      // Initialize default admin account
+      const String defaultAdminEmail = 'admin@smartshop.com';
+      final adminDocRef = adminAccountsRef.doc(defaultAdminEmail.toLowerCase());
+
+      // Check if admin account already exists
+      final existingDoc = await adminDocRef.get();
+      if (existingDoc.exists) {
+        AppLogger.success(
+          '✅ Admin account already configured: $defaultAdminEmail',
+        );
+        return;
+      }
+
+      // Create default admin account
+      await adminDocRef.set({
+        'email': defaultAdminEmail,
+        'enabled': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastLogin': null, // Will be set on first login
+        'notes': 'Default admin account. Disable in Firestore to revoke access.',
+      });
+
+      AppLogger.success(
+        '✅ Default admin account created: $defaultAdminEmail',
+      );
+      AppLogger.debug(
+        '   To revoke admin access: Set "enabled" = false in admin_accounts collection',
+      );
+    } catch (e) {
+      AppLogger.error('❌ Failed to initialize admin accounts', e);
+      // Non-fatal - app can still run, but admin login will use fallback whitelist
+    }
+  }
+
+  /// Disable an admin account (revocation)
+  ///
+  /// This is a production method for revoking admin access without code changes.
+  /// Can be called from admin dashboard or Firebase Console directly.
+  static Future<bool> disableAdminAccount(String email) async {
+    try {
+      AppLogger.warning('🔐 Disabling admin account: $email');
+
+      await FirebaseFirestore.instance
+          .collection('admin_accounts')
+          .doc(email.toLowerCase())
+          .update({
+        'enabled': false,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'disabledAt': FieldValue.serverTimestamp(),
+      });
+
+      AppLogger.success('✅ Admin account disabled: $email');
+      return true;
+    } catch (e) {
+      AppLogger.error('❌ Failed to disable admin account', e);
+      return false;
+    }
+  }
+
+  /// Re-enable a previously disabled admin account
+  static Future<bool> enableAdminAccount(String email) async {
+    try {
+      AppLogger.debug('🔐 Enabling admin account: $email');
+
+      await FirebaseFirestore.instance
+          .collection('admin_accounts')
+          .doc(email.toLowerCase())
+          .update({
+        'enabled': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'disabledAt': null,
+      });
+
+      AppLogger.success('✅ Admin account re-enabled: $email');
+      return true;
+    } catch (e) {
+      AppLogger.error('❌ Failed to enable admin account', e);
+      return false;
+    }
+  }
 }
+
 
 

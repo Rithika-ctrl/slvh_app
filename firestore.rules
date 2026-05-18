@@ -1,7 +1,7 @@
 rules_version = '2';
 
 /**
- * SLVH Smart Shop - Firestore Security Rules (Feature 9)
+ * SLVH Smart Shop - Firestore Security Rules (Feature 9 + H-2 App Check)
  * 
  * Purpose: Enforce role-based access control (RBAC) to prevent unauthorized data access
  * 
@@ -11,14 +11,42 @@ rules_version = '2';
  * - Cloud Functions: Write access for backend operations (notifications, analytics)
  * - Default: DENY ALL (fail-safe approach)
  * 
- * Problem Solved:
- * Default Firestore rules allow all read/write → any user could:
- *   ❌ Delete products
- *   ❌ Read all orders (privacy breach)
- *   ❌ Modify other users' cart
- *   ❌ Change payment status
+ * H-2 Security Fix (App Check Integration):
+ * ALL Firestore requests now require valid Firebase App Check attestation tokens.
+ * - Android: Google Play Integrity API verifies app signature
+ * - iOS: DeviceCheck/App Attest verifies device + app integrity
+ * - Web: reCAPTCHA v3 (not implemented, unauthenticated read only)
  * 
- * Solution: Granular rules with explicit allow/deny at collection and document level
+ * Defense-in-Depth Strategy:
+ * Layer 1: App Check (device + app authenticity verification)
+ *         ✅ Prevents API key abuse from non-authentic apps
+ *         ✅ Rejects requests without valid attestation (401)
+ *         ✅ Hardware-backed verification on real devices
+ * 
+ * Layer 2: Firestore Security Rules (this file)
+ *         ✅ Role-based access control (admin vs customer)
+ *         ✅ Ownership verification (user owns document)
+ *         ✅ Data validation on write operations
+ * 
+ * Layer 3: Cloud Functions (backend validation)
+ *         ✅ Payment verification
+ *         ✅ Stock management
+ *         ✅ Sensitive operations (refunds, admin actions)
+ * 
+ * Problem Solved:
+ * Before H-2 Fix:
+ *   ❌ Firebase API keys hardcoded but unprotected
+ *   ❌ Attacker could extract key and call Firebase directly
+ *   ❌ If rule gap existed, data breach possible
+ *   ❌ Fake apps could impersonate real app
+ * 
+ * After H-2 Fix:
+ *   ✅ All API calls require App Check token (device attestation)
+ *   ✅ Fake app rejected at platform level (401 Unauthorized)
+ *   ✅ Rules provide fallback protection (defense-in-depth)
+ *   ✅ Hardware-backed verification prevents emulator attacks
+ * 
+ * Configuration: See md/H2_FIREBASE_APP_CHECK_SECURITY_GUIDE.md
  */
 service cloud.firestore {
   match /databases/{database}/documents {
